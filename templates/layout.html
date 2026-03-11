@@ -10,11 +10,25 @@
 
 body{
 background: linear-gradient(135deg,#f5f7fa,#c3cfe2);
+min-height:100vh;
+}
+
+.navbar{
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
 }
 
 .card{
 border-radius:15px;
 box-shadow:0 10px 20px rgba(0,0,0,0.1);
+}
+
+.table{
+border-radius:10px;
+overflow:hidden;
+}
+
+.btn{
+border-radius:10px;
 }
 
 </style>
@@ -26,10 +40,15 @@ box-shadow:0 10px 20px rgba(0,0,0,0.1);
 <nav class="navbar navbar-dark bg-dark">
 <div class="container">
 
-<a class="navbar-brand">💨 Vape Inventory System</a>
+<a class="navbar-brand fw-bold">💨 Vape Inventory System</a>
 
-<a href="/" class="btn btn-outline-light">Home</a>
+<div>
+
+<a href="/" class="btn btn-outline-light me-2">Home</a>
+<a href="/add" class="btn btn-success me-2">Add Vape</a>
 <a href="/logout" class="btn btn-danger">Logout</a>
+
+</div>
 
 </div>
 </nav>
@@ -37,7 +56,6 @@ box-shadow:0 10px 20px rgba(0,0,0,0.1);
 <div class="container mt-5">
 
 {% block content %}
-
 {% endblock %}
 
 </div>
