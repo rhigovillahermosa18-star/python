@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="card p-4">
+
+<h2>Add Vape Juice</h2>
+
+<form method="POST">
+
+<div class="mb-3">
+<label>Name</label>
+<input type="text" name="name" class="form-control">
+</div>
+
+<div class="mb-3">
+<label>Flavor</label>
+<input type="text" name="flavor" class="form-control">
+</div>
+
+<div class="mb-3">
+<label>Nicotine</label>
+<input type="number" name="nicotine" class="form-control">
+</div>
+
+<div class="mb-3">
+<label>Size</label>
+<input type="number" name="size" class="form-control">
+</div>
+
+<div class="mb-3">
+<label>Price</label>
+<input type="number" name="price" class="form-control">
+</div>
+
+<button class="btn btn-success">Save</button>
+
+</form>
+
+</div>
+
+{% endblock %}
