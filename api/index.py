@@ -1,17 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="../templates")
 
-# Temporary storage (no database)
 inventory = []
 next_id = 1
-
 
 @app.route("/")
 def index():
     total = sum(float(item["price"]) for item in inventory)
     return render_template("index.html", items=inventory, total=total)
-
 
 @app.route("/add", methods=["GET","POST"])
 def add():
@@ -34,13 +31,11 @@ def add():
 
     return render_template("add.html")
 
-
 @app.route("/delete/<int:id>")
 def delete(id):
     global inventory
     inventory = [item for item in inventory if item["id"] != id]
     return redirect(url_for("index"))
-
 
 @app.route("/edit/<int:id>", methods=["GET","POST"])
 def edit(id):
@@ -57,6 +52,5 @@ def edit(id):
 
     return render_template("edit.html", item=item)
 
-
-if __name__ == "__main__":
-    app.run(debug=True)
+# IMPORTANT for Vercel
+app = app
