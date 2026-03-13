@@ -1,49 +1,41 @@
 {% extends "layout.html" %}
-
 {% block content %}
-
 <div class="card p-4">
-
-<h2 class="mb-4">Inventory List</h2>
-
-<a href="/add" class="btn btn-success mb-3">+ Add Vape Juice</a>
-
-<table class="table table-striped">
-
+<div class="d-flex justify-content-between align-items-center mb-4">
+<h2 class="mb-0"><i class="fas fa-boxes"></i> Inventory List</h2>
+<a href="/add" class="btn btn-success"><i class="fas fa-plus-circle"></i> Add Vape Juice</a>
+</div>
+<div class="table-responsive">
+<table class="table table-hover">
+<thead>
 <tr>
-<th>Name</th>
-<th>Flavor</th>
-<th>Nicotine</th>
-<th>Size</th>
-<th>Price</th>
-<th>Action</th>
+<th><i class="fas fa-tag"></i> Name</th>
+<th><i class="fas fa-lemon"></i> Flavor</th>
+<th><i class="fas fa-flask"></i> Nicotine</th>
+<th><i class="fas fa-fill-drip"></i> Size</th>
+<th><i class="fas fa-peso-sign"></i> Price</th>
+<th><i class="fas fa-cog"></i> Action</th>
 </tr>
-
+</thead>
+<tbody>
 {% for item in items %}
-
 <tr>
-<td>{{item.name}}</td>
+<td><strong>{{item.name}}</strong></td>
 <td>{{item.flavor}}</td>
 <td>{{item.nicotine}} mg</td>
 <td>{{item.size}} ml</td>
-<td>₱{{item.price}}</td>
-
+<td><strong>₱{{item.price}}</strong></td>
 <td>
-
-<a href="/edit/{{item.id}}" class="btn btn-primary btn-sm">Edit</a>
-
-<a href="/delete/{{item.id}}" class="btn btn-danger btn-sm">Delete</a>
-
+<a href="/edit/{{item.id}}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Edit</a>
+<a href="/delete/{{item.id}}" class="btn btn-danger btn-sm" onclick="return confirm('Delete this item?')"><i class="fas fa-trash"></i> Delete</a>
 </td>
-
 </tr>
-
 {% endfor %}
-
+</tbody>
 </table>
-
-<h4 class="mt-3">Total Value: ₱{{total}}</h4>
-
 </div>
-
+<div class="alert alert-info mt-4" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:15px;">
+<h4 class="mb-0"><i class="fas fa-calculator"></i> Total Inventory Value: <strong>₱{{total}}</strong></h4>
+</div>
+</div>
 {% endblock %}
