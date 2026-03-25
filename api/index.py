@@ -1,10 +1,12 @@
+import os
+import math
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
 app = Flask(__name__, template_folder="../templates")
-app.secret_key = "vapeshop_secret_2024"
+app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 
 # --- In-memory data ---
-users = [{"id": 1, "username": "admin", "password": "1234", "email": "admin@vape.com", "role": "admin"}]
+users = [{"id": 1, "username": "admin", "password": os.environ.get("ADMIN_PASSWORD", "admin123"), "email": "admin@vape.com", "role": "admin"}]
 next_user_id = 2
 
 products = [
@@ -221,14 +223,24 @@ def admin_add():
     if not is_admin():
         return redirect(url_for("home"))
     if request.method == "POST":
+        try:
+            nicotine = int(request.form["nicotine"])
+            size = int(request.form["size"])
+            price = float(request.form["price"])
+            stock = int(request.form["stock"])
+            if math.isnan(price) or math.isinf(price) or price < 0:
+                raise ValueError("Invalid price")
+        except (ValueError, TypeError):
+            flash("Invalid numeric values provided.", "danger")
+            return render_template("admin_form.html", item=None, user=current_user(), cart_count=cart_count())
         products.append({
             "id": next_product_id,
             "name": request.form["name"],
             "flavor": request.form["flavor"],
-            "nicotine": int(request.form["nicotine"]),
-            "size": int(request.form["size"]),
-            "price": float(request.form["price"]),
-            "stock": int(request.form["stock"]),
+            "nicotine": nicotine,
+            "size": size,
+            "price": price,
+            "stock": stock,
             "image": request.form["flavor"].lower().split()[0]
         })
         next_product_id += 1
@@ -244,12 +256,22 @@ def admin_edit(pid):
         return redirect(url_for("home"))
     p = get_product(pid)
     if request.method == "POST":
+        try:
+            nicotine = int(request.form["nicotine"])
+            size = int(request.form["size"])
+            price = float(request.form["price"])
+            stock = int(request.form["stock"])
+            if math.isnan(price) or math.isinf(price) or price < 0:
+                raise ValueError("Invalid price")
+        except (ValueError, TypeError):
+            flash("Invalid numeric values provided.", "danger")
+            return render_template("admin_form.html", item=p, user=current_user(), cart_count=cart_count())
         p["name"] = request.form["name"]
         p["flavor"] = request.form["flavor"]
-        p["nicotine"] = int(request.form["nicotine"])
-        p["size"] = int(request.form["size"])
-        p["price"] = float(request.form["price"])
-        p["stock"] = int(request.form["stock"])
+        p["nicotine"] = nicotine
+        p["size"] = size
+        p["price"] = price
+        p["stock"] = stock
         flash("Product updated!", "success")
         return redirect(url_for("admin"))
     return render_template("admin_form.html", item=p, user=current_user(), cart_count=cart_count())
@@ -267,10 +289,15 @@ def admin_delete(pid):
 
 
 # --- ADMIN UPDATE ORDER STATUS ---
+VALID_STATUSES = {"Pending", "Shipped", "Delivered"}
+
 @app.route("/admin/order/<int:oid>/<status>")
 def update_order(oid, status):
     if not is_admin():
         return redirect(url_for("home"))
+    if status not in VALID_STATUSES:
+        flash("Invalid order status.", "danger")
+        return redirect(url_for("admin"))
     order = next((o for o in orders if o["id"] == oid), None)
     if order:
         order["status"] = status
