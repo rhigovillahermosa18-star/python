@@ -41,6 +41,8 @@ def cart_count():
 # --- HOME ---
 @app.route("/")
 def home():
+    if is_admin():
+        return redirect(url_for("admin"))
     featured = products[:6]
     return render_template("home.html", products=featured, user=current_user(), cart_count=cart_count())
 
@@ -48,6 +50,8 @@ def home():
 # --- SHOP ---
 @app.route("/shop")
 def shop():
+    if is_admin():
+        return redirect(url_for("admin"))
     return render_template("shop.html", products=products, user=current_user(), cart_count=cart_count())
 
 
@@ -120,6 +124,8 @@ def add_to_cart(pid):
 # --- CART ---
 @app.route("/cart")
 def cart():
+    if is_admin():
+        return redirect(url_for("admin"))
     if not current_user():
         return redirect(url_for("login"))
     cart = session.get("cart", {})
@@ -160,6 +166,8 @@ def remove_from_cart(pid):
 @app.route("/checkout", methods=["GET", "POST"])
 def checkout():
     global next_order_id
+    if is_admin():
+        return redirect(url_for("admin"))
     if not current_user():
         return redirect(url_for("login"))
     cart = session.get("cart", {})
