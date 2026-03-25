@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<!-- HERO -->
+<div style="background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(236,72,153,0.1));border:1px solid rgba(139,92,246,0.2);border-radius:24px;padding:80px 40px;text-align:center;margin-bottom:60px;">
+  <h1 style="font-size:3.5rem;font-weight:900;background:linear-gradient(135deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;">
+    Premium Vape Juices
+  </h1>
+  <p style="color:#aaa;font-size:1.2rem;max-width:500px;margin:0 auto 30px;">
+    Discover our curated collection of premium e-liquids. Free delivery on orders over ₱1,000.
+  </p>
+  <a href="/shop" class="btn btn-purple btn-lg px-5 me-3"><i class="fas fa-store"></i> Shop Now</a>
+  {% if not user %}
+  <a href="/register" class="btn btn-outline-purple btn-lg px-5"><i class="fas fa-user-plus"></i> Join Us</a>
+  {% endif %}
+</div>
+
+<!-- STATS -->
+<div class="row text-center mb-5 g-3">
+  {% for icon, label, val in [("fa-box-open","Products","50+"),("fa-users","Customers","1,200+"),("fa-star","Rating","4.9★"),("fa-truck","Delivery","Fast")] %}
+  <div class="col-6 col-md-3">
+    <div class="card-dark p-4">
+      <i class="fas {{icon}} fa-2x mb-2" style="color:#8b5cf6"></i>
+      <h4 style="color:#fff;font-weight:700">{{val}}</h4>
+      <small style="color:#888">{{label}}</small>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- FEATURED PRODUCTS -->
+<h2 class="section-title mb-4"><i class="fas fa-fire"></i> Featured Products</h2>
+<div class="row g-4 mb-5">
+{% for p in products %}
+<div class="col-md-4 col-sm-6">
+  <div class="card-dark p-4 h-100 d-flex flex-column">
+    <div style="background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(236,72,153,0.15));border-radius:12px;height:140px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:3.5rem;">
+      {% set icons = {"mango":"🥭","blueberry":"🫐","strawberry":"🍓","mint":"🌿","grape":"🍇","lychee":"🍈"} %}
+      {{ icons.get(p.image, "💨") }}
+    </div>
+    <span class="badge-nic mb-2">{{p.nicotine}}mg · {{p.size}}ml</span>
+    <h5 style="color:#fff;font-weight:700">{{p.name}}</h5>
+    <p style="color:#888;font-size:0.9rem;flex-grow:1">{{p.flavor}} flavor</p>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <span style="font-size:1.4rem;font-weight:800;color:#8b5cf6">₱{{p.price}}</span>
+      <form action="/cart/add/{{p.id}}" method="POST">
+        <input type="hidden" name="qty" value="1">
+        <button class="btn btn-purple btn-sm px-3"><i class="fas fa-cart-plus"></i> Add</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+</div>
+
+<!-- WHY US -->
+<h2 class="section-title mb-4"><i class="fas fa-shield-alt"></i> Why CloudVape?</h2>
+<div class="row g-3 mb-5">
+  {% for icon, title, desc in [
+    ("fa-certificate","Premium Quality","All products are lab-tested and certified."),
+    ("fa-shipping-fast","Fast Delivery","Same-day dispatch on orders before 3PM."),
+    ("fa-headset","24/7 Support","Our team is always here to help you."),
+    ("fa-lock","Secure Checkout","Your data is always safe with us.")
+  ] %}
+  <div class="col-md-3 col-sm-6">
+    <div class="card-dark p-4 text-center">
+      <i class="fas {{icon}} fa-2x mb-3" style="color:#ec4899"></i>
+      <h6 style="color:#fff;font-weight:700">{{title}}</h6>
+      <small style="color:#888">{{desc}}</small>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

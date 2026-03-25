@@ -1,44 +1,92 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Vape Inventory</title>
+<title>CloudVape Shop</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
-.navbar{background:rgba(255,255,255,0.1)!important;backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.2);box-shadow:0 8px 32px rgba(0,0,0,0.1);}
-.navbar-brand{color:#fff!important;font-size:1.5rem;font-weight:700;letter-spacing:1px;}
-.btn-glass{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:#fff;backdrop-filter:blur(10px);transition:all 0.3s;}
-.btn-glass:hover{background:rgba(255,255,255,0.3);color:#fff;transform:translateY(-2px);}
-.btn-danger-glass{background:rgba(220,53,69,0.8);border:none;color:#fff;}
-.btn-danger-glass:hover{background:rgba(220,53,69,1);color:#fff;}
-.card{background:rgba(255,255,255,0.95);border:none;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);backdrop-filter:blur(10px);}
-.table{background:#fff;border-radius:15px;overflow:hidden;}
-.table thead{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;}
-.btn{border-radius:10px;padding:8px 20px;font-weight:600;transition:all 0.3s;}
-.btn-success{background:linear-gradient(135deg,#11998e,#38ef7d);border:none;}
-.btn-success:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(56,239,125,0.4);}
-.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);border:none;}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(118,75,162,0.4);}
-.btn-danger{background:linear-gradient(135deg,#eb3349,#f45c43);border:none;}
-.btn-danger:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(235,51,73,0.4);}
-.btn-sm{padding:5px 15px;font-size:0.875rem;}
+body{background:#0f0f1a;color:#e0e0e0;font-family:'Segoe UI',sans-serif;min-height:100vh;}
+.navbar{background:rgba(15,15,26,0.95)!important;backdrop-filter:blur(10px);border-bottom:1px solid rgba(139,92,246,0.3);padding:14px 0;}
+.navbar-brand{font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-link{color:#ccc!important;font-weight:500;transition:color 0.2s;}
+.nav-link:hover{color:#8b5cf6!important;}
+.btn-purple{background:linear-gradient(135deg,#8b5cf6,#7c3aed);border:none;color:#fff;border-radius:10px;font-weight:600;transition:all 0.3s;}
+.btn-purple:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(139,92,246,0.4);color:#fff;}
+.btn-outline-purple{border:2px solid #8b5cf6;color:#8b5cf6;border-radius:10px;font-weight:600;background:transparent;transition:all 0.3s;}
+.btn-outline-purple:hover{background:#8b5cf6;color:#fff;}
+.cart-badge{background:#ec4899;color:#fff;border-radius:50%;padding:2px 7px;font-size:0.75rem;position:relative;top:-8px;left:-4px;}
+.card-dark{background:rgba(255,255,255,0.05);border:1px solid rgba(139,92,246,0.2);border-radius:16px;transition:transform 0.3s,box-shadow 0.3s;}
+.card-dark:hover{transform:translateY(-5px);box-shadow:0 15px 40px rgba(139,92,246,0.25);}
+.badge-nic{background:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);border-radius:20px;padding:3px 10px;font-size:0.78rem;}
+.section-title{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+footer{background:rgba(15,15,26,0.95);border-top:1px solid rgba(139,92,246,0.2);padding:30px 0;margin-top:80px;color:#888;}
+.alert{border-radius:12px;border:none;}
+.form-control,.form-select{background:rgba(255,255,255,0.07);border:1px solid rgba(139,92,246,0.3);color:#e0e0e0;border-radius:10px;}
+.form-control:focus,.form-select:focus{background:rgba(255,255,255,0.1);border-color:#8b5cf6;box-shadow:0 0 0 0.2rem rgba(139,92,246,0.25);color:#fff;}
+.form-control::placeholder{color:#888;}
+.table-dark-custom{background:rgba(255,255,255,0.03);border-radius:12px;overflow:hidden;}
+.table-dark-custom thead{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;}
+.table-dark-custom tbody tr{border-bottom:1px solid rgba(255,255,255,0.05);}
+.table-dark-custom tbody tr:hover{background:rgba(139,92,246,0.08);}
 </style>
 </head>
 <body>
-<nav class="navbar navbar-dark">
+
+<nav class="navbar navbar-expand-lg navbar-dark">
 <div class="container">
-<a class="navbar-brand"><i class="fas fa-smoking"></i> Vape Inventory</a>
-<div>
-<a href="/" class="btn btn-glass btn-sm me-2"><i class="fas fa-home"></i> Home</a>
-<a href="/logout" class="btn btn-danger-glass btn-sm"><i class="fas fa-sign-out-alt"></i> Logout</a>
-</div>
+  <a class="navbar-brand" href="/"><i class="fas fa-cloud"></i> CloudVape</a>
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="nav">
+    <ul class="navbar-nav me-auto">
+      <li class="nav-item"><a class="nav-link" href="/"><i class="fas fa-home"></i> Home</a></li>
+      <li class="nav-item"><a class="nav-link" href="/shop"><i class="fas fa-store"></i> Shop</a></li>
+    </ul>
+    <ul class="navbar-nav align-items-center gap-2">
+      <li class="nav-item">
+        <a class="nav-link" href="/cart"><i class="fas fa-shopping-cart fa-lg"></i>
+          {% if cart_count > 0 %}<span class="cart-badge">{{cart_count}}</span>{% endif %}
+        </a>
+      </li>
+      {% if user %}
+        {% if user.role == 'admin' %}
+        <li class="nav-item"><a class="nav-link" href="/admin"><i class="fas fa-cog"></i> Admin</a></li>
+        {% endif %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="fas fa-user-circle"></i> {{user.username}}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+            <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+          </ul>
+        </li>
+      {% else %}
+        <li class="nav-item"><a href="/login" class="btn btn-outline-purple btn-sm px-3">Login</a></li>
+        <li class="nav-item"><a href="/register" class="btn btn-purple btn-sm px-3">Register</a></li>
+      {% endif %}
+    </ul>
+  </div>
 </div>
 </nav>
-<div class="container mt-5">
-{% block content %}
-{% endblock %}
+
+<div class="container mt-4">
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div class="alert alert-{{cat}} alert-dismissible fade show" role="alert">
+    {{msg}}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+{% endwith %}
+{% block content %}{% endblock %}
 </div>
+
+<footer class="text-center">
+  <p><i class="fas fa-cloud"></i> <strong style="color:#8b5cf6">CloudVape</strong> &copy; 2024 — Premium Vape Shop</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

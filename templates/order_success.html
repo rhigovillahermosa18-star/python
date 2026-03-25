@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="text-center py-5">
+  <div style="font-size:5rem;margin-bottom:20px">🎉</div>
+  <h2 style="color:#fff;font-weight:800;margin-bottom:10px">Order Placed!</h2>
+  <p style="color:#888;font-size:1.1rem;margin-bottom:30px">Thank you for your order. We'll process it shortly.</p>
+
+  {% if order %}
+  <div class="card-dark p-4 mx-auto mb-4" style="max-width:500px;text-align:left">
+    <div class="d-flex justify-content-between mb-3">
+      <span style="color:#aaa">Order #</span>
+      <span style="color:#8b5cf6;font-weight:700">{{order.id}}</span>
+    </div>
+    <div class="d-flex justify-content-between mb-3">
+      <span style="color:#aaa">Name</span>
+      <span style="color:#fff">{{order.name}}</span>
+    </div>
+    <div class="d-flex justify-content-between mb-3">
+      <span style="color:#aaa">Phone</span>
+      <span style="color:#fff">{{order.phone}}</span>
+    </div>
+    <div class="d-flex justify-content-between mb-3">
+      <span style="color:#aaa">Address</span>
+      <span style="color:#fff;text-align:right;max-width:250px">{{order.address}}</span>
+    </div>
+    <hr style="border-color:rgba(139,92,246,0.3)">
+    {% for item in order.items %}
+    <div class="d-flex justify-content-between mb-2" style="color:#aaa;font-size:0.9rem">
+      <span>{{item.product.name}} x{{item.qty}}</span>
+      <span>₱{{item.subtotal}}</span>
+    </div>
+    {% endfor %}
+    <hr style="border-color:rgba(139,92,246,0.3)">
+    <div class="d-flex justify-content-between">
+      <span style="color:#fff;font-weight:700">Total</span>
+      <span style="color:#8b5cf6;font-weight:800;font-size:1.2rem">₱{{order.total}}</span>
+    </div>
+    <div class="mt-3 text-center">
+      <span style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:20px;padding:5px 16px;font-size:0.85rem">
+        <i class="fas fa-clock"></i> Status: {{order.status}}
+      </span>
+    </div>
+  </div>
+  {% endif %}
+
+  <a href="/shop" class="btn btn-purple px-5 me-2"><i class="fas fa-store"></i> Continue Shopping</a>
+  <a href="/" class="btn btn-outline-purple px-5"><i class="fas fa-home"></i> Home</a>
+</div>
+
+{% endblock %}
