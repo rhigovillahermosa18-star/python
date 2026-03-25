@@ -8,9 +8,13 @@
   <div class="col-lg-8">
     {% for item in items %}
     <div class="card-dark p-4 mb-3 d-flex align-items-center gap-4">
-      <div style="font-size:3rem;min-width:60px;text-align:center;">
-        {% set icons = {"mango":"🥭","blueberry":"🫐","strawberry":"🍓","mint":"🌿","grape":"🍇","lychee":"🍈"} %}
-        {{ icons.get(item.product.image, "💨") }}
+      <div style="font-size:3rem;min-width:60px;width:60px;height:60px;text-align:center;border-radius:10px;overflow:hidden;background:rgba(139,92,246,0.1);display:flex;align-items:center;justify-content:center;">
+        {% set emojis = {"mango":"🥭","blueberry":"🫐","strawberry":"🍓","mint":"🌿","grape":"🍇","lychee":"🍈"} %}
+        {% if item.product.image %}
+        <img src="/static/images/{{item.product.image}}" style="width:100%;height:100%;object-fit:cover;">
+        {% else %}
+        {{ emojis.get(item.product.flavor|lower, "💨") }}
+        {% endif %}
       </div>
       <div class="flex-grow-1">
         <h5 style="color:#fff;font-weight:700;margin-bottom:4px">{{item.product.name}}</h5>

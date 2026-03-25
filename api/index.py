@@ -1,8 +1,16 @@
 import os
 import math
+import uuid
+from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
-app = Flask(__name__, template_folder="../templates")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static"),
+)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 
 # --- In-memory data ---
@@ -10,12 +18,12 @@ users = [{"id": 1, "username": "admin", "password": os.environ.get("ADMIN_PASSWO
 next_user_id = 2
 
 products = [
-    {"id": 1, "name": "Mango Ice", "flavor": "Mango", "nicotine": 50, "size": 30, "price": 350.00, "stock": 20, "image": "mango"},
-    {"id": 2, "name": "Blueberry Blast", "flavor": "Blueberry", "nicotine": 35, "size": 60, "price": 480.00, "stock": 15, "image": "blueberry"},
-    {"id": 3, "name": "Strawberry Milk", "flavor": "Strawberry", "nicotine": 25, "size": 30, "price": 320.00, "stock": 25, "image": "strawberry"},
-    {"id": 4, "name": "Mint Breeze", "flavor": "Mint", "nicotine": 50, "size": 30, "price": 350.00, "stock": 18, "image": "mint"},
-    {"id": 5, "name": "Grape Soda", "flavor": "Grape", "nicotine": 35, "size": 60, "price": 500.00, "stock": 10, "image": "grape"},
-    {"id": 6, "name": "Lychee Frost", "flavor": "Lychee", "nicotine": 50, "size": 30, "price": 380.00, "stock": 12, "image": "lychee"},
+    {"id": 1, "name": "Mango Ice", "flavor": "Mango", "nicotine": 50, "size": 30, "price": 350.00, "stock": 20, "image": ""},
+    {"id": 2, "name": "Blueberry Blast", "flavor": "Blueberry", "nicotine": 35, "size": 60, "price": 480.00, "stock": 15, "image": ""},
+    {"id": 3, "name": "Strawberry Milk", "flavor": "Strawberry", "nicotine": 25, "size": 30, "price": 320.00, "stock": 25, "image": ""},
+    {"id": 4, "name": "Mint Breeze", "flavor": "Mint", "nicotine": 50, "size": 30, "price": 350.00, "stock": 18, "image": ""},
+    {"id": 5, "name": "Grape Soda", "flavor": "Grape", "nicotine": 35, "size": 60, "price": 500.00, "stock": 10, "image": ""},
+    {"id": 6, "name": "Lychee Frost", "flavor": "Lychee", "nicotine": 50, "size": 30, "price": 380.00, "stock": 12, "image": ""},
 ]
 next_product_id = 7
 
@@ -233,6 +241,13 @@ def admin_add():
         except (ValueError, TypeError):
             flash("Invalid numeric values provided.", "danger")
             return render_template("admin_form.html", item=None, user=current_user(), cart_count=cart_count())
+        image_filename = ""
+        file = request.files.get("image")
+        if file and file.filename:
+            ext = os.path.splitext(secure_filename(file.filename))[1].lower()
+            if ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+                image_filename = uuid.uuid4().hex + ext
+                file.save(os.path.join(app.static_folder, "images", image_filename))
         products.append({
             "id": next_product_id,
             "name": request.form["name"],
@@ -241,7 +256,7 @@ def admin_add():
             "size": size,
             "price": price,
             "stock": stock,
-            "image": request.form["flavor"].lower().split()[0]
+            "image": image_filename
         })
         next_product_id += 1
         flash("Product added!", "success")
@@ -255,6 +270,9 @@ def admin_edit(pid):
     if not is_admin():
         return redirect(url_for("home"))
     p = get_product(pid)
+    if not p:
+        flash("Product not found.", "danger")
+        return redirect(url_for("admin"))
     if request.method == "POST":
         try:
             nicotine = int(request.form["nicotine"])
@@ -266,6 +284,17 @@ def admin_edit(pid):
         except (ValueError, TypeError):
             flash("Invalid numeric values provided.", "danger")
             return render_template("admin_form.html", item=p, user=current_user(), cart_count=cart_count())
+        file = request.files.get("image")
+        if file and file.filename:
+            ext = os.path.splitext(secure_filename(file.filename))[1].lower()
+            if ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+                if p.get("image"):
+                    old = os.path.join(app.static_folder, "images", p["image"])
+                    if os.path.exists(old):
+                        os.remove(old)
+                image_filename = uuid.uuid4().hex + ext
+                file.save(os.path.join(app.static_folder, "images", image_filename))
+                p["image"] = image_filename
         p["name"] = request.form["name"]
         p["flavor"] = request.form["flavor"]
         p["nicotine"] = nicotine
@@ -302,3 +331,7 @@ def update_order(oid, status):
     if order:
         order["status"] = status
     return redirect(url_for("admin"))
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

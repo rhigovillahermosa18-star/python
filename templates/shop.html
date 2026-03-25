@@ -10,9 +10,13 @@
 {% for p in products %}
 <div class="col-lg-4 col-md-6">
   <div class="card-dark p-4 h-100 d-flex flex-column">
-    <div style="background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(236,72,153,0.15));border-radius:12px;height:150px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:4rem;">
-      {% set icons = {"mango":"🥭","blueberry":"🫐","strawberry":"🍓","mint":"🌿","grape":"🍇","lychee":"🍈"} %}
-      {{ icons.get(p.image, "💨") }}
+    <div style="background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(236,72,153,0.15));border-radius:12px;height:150px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:4rem;overflow:hidden;">
+      {% set emojis = {"mango":"🥭","blueberry":"🫐","strawberry":"🍓","mint":"🌿","grape":"🍇","lychee":"🍈"} %}
+      {% if p.image %}
+      <img src="/static/images/{{p.image}}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+      {% else %}
+      {{ emojis.get(p.flavor|lower, "💨") }}
+      {% endif %}
     </div>
     <div class="d-flex gap-2 mb-2 flex-wrap">
       <span class="badge-nic">{{p.nicotine}}mg</span>
