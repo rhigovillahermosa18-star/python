@@ -86,7 +86,7 @@ def login():
             session["user_id"] = u["id"]
             session["cart"] = session.get("cart", {})
             flash(f"Welcome back, {u['username']}!", "success")
-            return redirect(url_for("home"))
+            return redirect(url_for("admin") if u["role"] == "admin" else url_for("home"))
         flash("Invalid username or password.", "danger")
     return render_template("login.html", user=None, cart_count=cart_count())
 
