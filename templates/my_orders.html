@@ -12,7 +12,9 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
       <div>
         <span style="color:#8b5cf6;font-weight:800;font-size:1.1rem">#{{o.id}}</span>
+        {% if o.created_at %}
         <span style="color:#555;font-size:0.85rem;margin-left:10px">{{o.created_at}}</span>
+        {% endif %}
       </div>
       <span style="
         background:{% if o.status=='Pending' %}rgba(245,158,11,0.15){% elif o.status=='Shipped' %}rgba(139,92,246,0.15){% else %}rgba(56,239,125,0.15){% endif %};
@@ -29,19 +31,25 @@
       {% for item in o.items %}
       <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid rgba(255,255,255,0.05)">
         <div class="d-flex align-items-center gap-3">
-          <div style="color:#fff;font-weight:600">{{item.product_name}}</div>
+          <span style="color:#fff;font-weight:600">{{item.product_name}}</span>
           <span style="color:#888;font-size:0.85rem">x{{item.qty}}</span>
         </div>
         <span style="color:#8b5cf6;font-weight:700">₱{{item.subtotal}}</span>
       </div>
+      {% else %}
+      <p style="color:#666;font-size:0.9rem">No items found.</p>
       {% endfor %}
     </div>
 
     <!-- Order Footer -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2" style="border-top:1px solid rgba(139,92,246,0.2)">
       <div style="color:#aaa;font-size:0.88rem">
+        {% if o.address %}
         <i class="fas fa-map-marker-alt" style="color:#8b5cf6;margin-right:6px"></i>{{o.address}}
+        {% endif %}
+        {% if o.phone %}
         <span style="margin-left:14px"><i class="fas fa-phone" style="color:#8b5cf6;margin-right:6px"></i>{{o.phone}}</span>
+        {% endif %}
       </div>
       <div style="color:#fff;font-weight:800;font-size:1.1rem">
         Total: <span style="color:#8b5cf6">₱{{o.total}}</span>

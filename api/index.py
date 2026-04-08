@@ -280,7 +280,7 @@ def checkout():
             session["cart"] = {}
             flash(f"Order #{order['id']} placed successfully!", "success")
             return redirect(url_for("order_success", oid=order["id"]))
-        except (ValueError, RuntimeError, KeyError) as e:
+        except Exception as e:
             app.logger.error("Checkout error: %s", e)
             flash(f"Error placing order: {e}", "danger")
     return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
@@ -299,8 +299,25 @@ def my_orders():
         raw = supabase.table("orders").select("*").eq("user_id", u["id"]).order("id", desc=True).execute().data or []
         for o in raw:
             raw_items = supabase.table("order_items").select("*").eq("order_id", o["id"]).execute().data or []
-            orders.append(build_order(o, raw_items))
-    except (ValueError, RuntimeError, KeyError) as e:
+            items = [
+                {
+                    "product_name": i.get("product_name", ""),
+                    "qty": i.get("qty", 0),
+                    "subtotal": i.get("subtotal", 0)
+                }
+                for i in raw_items
+            ]
+            orders.append({
+                "id": o.get("id", ""),
+                "name": o.get("name", ""),
+                "phone": o.get("phone", ""),
+                "address": o.get("address", ""),
+                "total": o.get("total", 0),
+                "status": o.get("status", "Pending"),
+                "created_at": str(o.get("created_at", ""))[:10],
+                "items": items
+            })
+    except Exception as e:
         app.logger.error("my_orders error: %s", e)
         flash(f"Error loading orders: {e}", "danger")
     return render_template("my_orders.html", orders=orders, user=u, cart_count=cart_count())
@@ -318,7 +335,7 @@ def order_success(oid):
                 {"product": {"name": i["product_name"], "id": i["product_id"]}, "qty": i["qty"], "subtotal": i["subtotal"]}
                 for i in raw_items
             ])
-    except (ValueError, RuntimeError, KeyError) as e:
+    except Exception as e:
         app.logger.error("order_success error: %s", e)
     return render_template("order_success.html", order=order, user=current_user(), cart_count=cart_count())
 
