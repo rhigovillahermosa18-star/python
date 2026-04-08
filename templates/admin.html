@@ -1,6 +1,13 @@
 {% extends "layout.html" %}
 {% block content %}
 
+<style>
+.table-dark-custom table { color: #e0e0e0; }
+.table-dark-custom tbody tr td { color: #e0e0e0; vertical-align: middle; }
+.table-dark-custom thead th { color: #fff; font-weight: 600; border: none; padding: 14px 16px; }
+.table-dark-custom tbody tr td { padding: 12px 16px; border: none; }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2 class="section-title mb-0"><i class="fas fa-cog"></i> Admin Panel</h2>
   <a href="/admin/add" class="btn btn-purple"><i class="fas fa-plus"></i> Add Product</a>
@@ -18,7 +25,7 @@
     <div class="card-dark p-4 text-center">
       <i class="fas {{icon}} fa-2x mb-2" style="color:{{color}}"></i>
       <h4 style="color:#fff;font-weight:800">{% if loop.last %}₱{{val}}{% else %}{{val}}{% endif %}</h4>
-      <small style="color:#888">{{label}}</small>
+      <small style="color:#aaa">{{label}}</small>
     </div>
   </div>
   {% endfor %}
@@ -37,17 +44,21 @@
   <div class="tab-pane fade show active" id="products">
     <div class="table-responsive table-dark-custom">
       <table class="table table-borderless mb-0">
-        <thead><tr><th>Image</th><th>Product</th><th>Flavor</th><th>Nicotine</th><th>Size</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Image</th><th>Product</th><th>Flavor</th><th>Nicotine</th><th>Size</th><th>Price</th><th>Stock</th><th>Actions</th>
+          </tr>
+        </thead>
         <tbody>
         {% for p in products %}
         <tr>
           <td><img src="{{ product_image(p) }}" style="width:45px;height:45px;object-fit:cover;border-radius:8px;"></td>
-          <td style="color:#fff;font-weight:600">{{p.name}}</td>
-          <td style="color:#aaa">{{p.flavor}}</td>
+          <td><strong style="color:#fff;">{{p.name}}</strong></td>
+          <td><span style="color:#ccc;">{{p.flavor}}</span></td>
           <td><span class="badge-nic">{{p.nicotine}}mg</span></td>
-          <td style="color:#aaa">{{p.size}}ml</td>
-          <td style="color:#8b5cf6;font-weight:700">₱{{p.price}}</td>
-          <td style="color:{% if p.stock < 5 %}#f87171{% else %}#38ef7d{% endif %}">{{p.stock}}</td>
+          <td><span style="color:#ccc;">{{p.size}}ml</span></td>
+          <td><strong style="color:#8b5cf6;">₱{{p.price}}</strong></td>
+          <td><strong style="color:{% if p.stock < 5 %}#f87171{% else %}#38ef7d{% endif %};">{{p.stock}}</strong></td>
           <td>
             <a href="/admin/edit/{{p.id}}" class="btn btn-sm btn-outline-purple me-1"><i class="fas fa-edit"></i></a>
             <a href="/admin/delete/{{p.id}}" class="btn btn-sm" style="background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3);border-radius:8px" onclick="return confirm('Delete this product?')"><i class="fas fa-trash"></i></a>
@@ -64,24 +75,31 @@
     {% if orders %}
     <div class="table-responsive table-dark-custom">
       <table class="table table-borderless mb-0">
-        <thead><tr><th>#</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead>
+          <tr><th>#</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+        </thead>
         <tbody>
         {% for o in orders %}
         <tr>
-          <td style="color:#8b5cf6;font-weight:700">#{{o.id}}</td>
-          <td style="color:#fff">{{o.name}}</td>
-          <td style="color:#aaa">{{o.phone}}</td>
-          <td style="color:#8b5cf6;font-weight:700">₱{{o.total}}</td>
+          <td><strong style="color:#8b5cf6;">#{{o.id}}</strong></td>
+          <td><span style="color:#fff;">{{o.name}}</span></td>
+          <td><span style="color:#ccc;">{{o.phone}}</span></td>
+          <td><strong style="color:#8b5cf6;">₱{{o.total}}</strong></td>
           <td>
-            <span style="background:{% if o.status=='Pending' %}rgba(245,158,11,0.15){% elif o.status=='Shipped' %}rgba(139,92,246,0.15){% else %}rgba(56,239,125,0.15){% endif %};
+            <span style="
+              background:{% if o.status=='Pending' %}rgba(245,158,11,0.15){% elif o.status=='Shipped' %}rgba(139,92,246,0.15){% else %}rgba(56,239,125,0.15){% endif %};
               color:{% if o.status=='Pending' %}#f59e0b{% elif o.status=='Shipped' %}#a78bfa{% else %}#38ef7d{% endif %};
               border:1px solid {% if o.status=='Pending' %}rgba(245,158,11,0.3){% elif o.status=='Shipped' %}rgba(139,92,246,0.3){% else %}rgba(56,239,125,0.3){% endif %};
-              border-radius:20px;padding:3px 12px;font-size:0.8rem">{{o.status}}</span>
+              border-radius:20px;padding:3px 12px;font-size:0.8rem;white-space:nowrap;">
+              {{o.status}}
+            </span>
           </td>
-          <td class="d-flex gap-1 flex-wrap">
-            <a href="/admin/order/{{o.id}}/Pending" class="btn btn-sm" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:0.75rem">Pending</a>
-            <a href="/admin/order/{{o.id}}/Shipped" class="btn btn-sm" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);border-radius:8px;font-size:0.75rem">Shipped</a>
-            <a href="/admin/order/{{o.id}}/Delivered" class="btn btn-sm" style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:8px;font-size:0.75rem">Delivered</a>
+          <td>
+            <div class="d-flex gap-1 flex-wrap">
+              <a href="/admin/order/{{o.id}}/Pending" class="btn btn-sm" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:0.75rem">Pending</a>
+              <a href="/admin/order/{{o.id}}/Shipped" class="btn btn-sm" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);border-radius:8px;font-size:0.75rem">Shipped</a>
+              <a href="/admin/order/{{o.id}}/Delivered" class="btn btn-sm" style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:8px;font-size:0.75rem">Delivered</a>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -89,7 +107,7 @@
       </table>
     </div>
     {% else %}
-    <div class="text-center py-5" style="color:#888"><i class="fas fa-inbox fa-3x mb-3"></i><p>No orders yet.</p></div>
+    <div class="text-center py-5"><i class="fas fa-inbox fa-3x mb-3" style="color:#555"></i><p style="color:#888">No orders yet.</p></div>
     {% endif %}
   </div>
 
@@ -97,14 +115,24 @@
   <div class="tab-pane fade" id="usersTab">
     <div class="table-responsive table-dark-custom">
       <table class="table table-borderless mb-0">
-        <thead><tr><th>#</th><th>Username</th><th>Email</th><th>Role</th></tr></thead>
+        <thead>
+          <tr><th>#</th><th>Username</th><th>Email</th><th>Role</th></tr>
+        </thead>
         <tbody>
         {% for u in users %}
         <tr>
-          <td style="color:#888">{{u.id}}</td>
-          <td style="color:#fff;font-weight:600">{{u.username}}</td>
-          <td style="color:#aaa">{{u.email}}</td>
-          <td><span style="background:{% if u.role=='admin' %}rgba(236,72,153,0.15){% else %}rgba(139,92,246,0.15){% endif %};color:{% if u.role=='admin' %}#f472b6{% else %}#a78bfa{% endif %};border:1px solid {% if u.role=='admin' %}rgba(236,72,153,0.3){% else %}rgba(139,92,246,0.3){% endif %};border-radius:20px;padding:3px 12px;font-size:0.8rem">{{u.role}}</span></td>
+          <td><span style="color:#888;">{{u.id}}</span></td>
+          <td><strong style="color:#fff;">{{u.username}}</strong></td>
+          <td><span style="color:#ccc;">{{u.email}}</span></td>
+          <td>
+            <span style="
+              background:{% if u.role=='admin' %}rgba(236,72,153,0.15){% else %}rgba(139,92,246,0.15){% endif %};
+              color:{% if u.role=='admin' %}#f472b6{% else %}#a78bfa{% endif %};
+              border:1px solid {% if u.role=='admin' %}rgba(236,72,153,0.3){% else %}rgba(139,92,246,0.3){% endif %};
+              border-radius:20px;padding:3px 12px;font-size:0.8rem;">
+              {{u.role}}
+            </span>
+          </td>
         </tr>
         {% endfor %}
         </tbody>
