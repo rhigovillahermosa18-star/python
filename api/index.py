@@ -3,7 +3,7 @@ import math
 import uuid
 import logging
 from dotenv import load_dotenv
-from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename, safe_join
 from werkzeug.exceptions import NotFound
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
 from supabase import create_client, Client
@@ -96,9 +96,16 @@ def build_order(o, items):
 # --- SERVE STATIC FILES (local dev only, Vercel handles this via CDN) ---
 @app.route("/static/<path:filename>")
 def static_files(filename):
-    safe_parts = [os.path.basename(p) for p in filename.replace("\\", "/").split("/")]
-    safe_path = os.path.join(*safe_parts) if safe_parts else ""
-    return send_from_directory(os.path.join(BASE_DIR, "static"), safe_path)
+    static_dir = os.path.join(BASE_DIR, "static")
+    try:
+        safe_path = safe_join(static_dir, filename)
+    except Exception:
+        abort(404)
+    if not os.path.isfile(safe_path):
+        abort(404)
+    directory = os.path.dirname(safe_path)
+    file = os.path.basename(safe_path)
+    return send_from_directory(directory, file)
 
 
 # --- HOME ---
