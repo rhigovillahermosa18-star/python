@@ -1,0 +1,80 @@
+{% extends "layout.html" %}
+{% block content %}
+
+{% if product %}
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div style="border-radius:16px;overflow:hidden;position:relative;height:450px;">
+      <img src="{{ product_image(product) }}" style="width:100%;height:100%;object-fit:cover;" alt="{{product.name}}">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(15,15,26,0.8) 0%,transparent 50%);"></div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card-dark p-5">
+      <div class="d-flex gap-2 mb-3 flex-wrap">
+        <span class="badge-nic">{{product.nicotine}}mg</span>
+        <span class="badge-nic">{{product.size}}ml</span>
+        <span style="background:rgba(236,72,153,0.15);color:#f472b6;border:1px solid rgba(236,72,153,0.3);border-radius:20px;padding:3px 10px;font-size:0.78rem;">{{product.flavor}}</span>
+      </div>
+
+      <h1 style="color:#fff;font-weight:800;font-size:2.5rem;margin-bottom:16px;">{{product.name}}</h1>
+      
+      <p style="color:#888;font-size:1.1rem;margin-bottom:24px;">{{product.flavor}} flavor vape juice</p>
+
+      <div class="d-flex align-items-center gap-4 mb-4">
+        <div>
+          <small style="color:#666;display:block;margin-bottom:4px;">Price</small>
+          <span style="font-size:2.5rem;font-weight:900;color:#8b5cf6;">₱{{product.price}}</span>
+        </div>
+        <div>
+          <small style="color:#666;display:block;margin-bottom:4px;">Stock</small>
+          <span style="font-size:1.5rem;font-weight:700;color:{% if product.stock < 5 %}#f87171{% else %}#38ef7d{% endif %};">{{product.stock}} units</span>
+        </div>
+      </div>
+
+      <div class="card-dark p-4 mb-4" style="background:rgba(139,92,246,0.08);">
+        <div class="row g-3">
+          <div class="col-6">
+            <small style="color:#888;display:block;margin-bottom:4px;"><i class="fas fa-flask"></i> Nicotine</small>
+            <span style="color:#fff;font-weight:600;">{{product.nicotine}}mg</span>
+          </div>
+          <div class="col-6">
+            <small style="color:#888;display:block;margin-bottom:4px;"><i class="fas fa-fill-drip"></i> Size</small>
+            <span style="color:#fff;font-weight:600;">{{product.size}}ml</span>
+          </div>
+          <div class="col-12">
+            <small style="color:#888;display:block;margin-bottom:4px;"><i class="fas fa-lemon"></i> Flavor</small>
+            <span style="color:#fff;font-weight:600;">{{product.flavor}}</span>
+          </div>
+        </div>
+      </div>
+
+      {% if product.stock > 0 %}
+      <form action="/cart/add/{{product.id}}" method="POST" class="d-flex gap-3 align-items-center mb-3">
+        <div style="flex:1;">
+          <label style="color:#aaa;font-size:0.85rem;margin-bottom:6px;">Quantity</label>
+          <input type="number" name="qty" value="1" min="1" max="{{product.stock}}" class="form-control form-control-lg">
+        </div>
+        <button class="btn btn-purple btn-lg px-5" style="margin-top:28px;"><i class="fas fa-cart-plus"></i> Add to Cart</button>
+      </form>
+      {% else %}
+      <div class="alert alert-danger mb-3">
+        <i class="fas fa-exclamation-circle"></i> This product is currently out of stock.
+      </div>
+      {% endif %}
+
+      <a href="/shop" class="btn btn-outline-purple w-100"><i class="fas fa-arrow-left"></i> Back to Shop</a>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+  <div style="font-size:5rem;margin-bottom:20px;">❌</div>
+  <h4 style="color:#aaa">Product not found</h4>
+  <a href="/shop" class="btn btn-purple mt-3 px-5"><i class="fas fa-store"></i> Browse Shop</a>
+</div>
+{% endif %}
+
+{% endblock %}

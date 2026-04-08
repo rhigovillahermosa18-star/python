@@ -110,6 +110,15 @@ def home():
     return render_template("home.html", products=products, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
 
+# --- PRODUCT DETAIL ---
+@app.route("/product/<int:pid>")
+def product_detail(pid):
+    if is_admin():
+        return redirect(url_for("admin"))
+    product = get_product(pid)
+    return render_template("product_detail.html", product=product, user=current_user(), cart_count=cart_count(), product_image=product_image)
+
+
 # --- SHOP ---
 @app.route("/shop")
 def shop():
