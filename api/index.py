@@ -287,15 +287,20 @@ def my_orders():
 def order_success(oid):
     order = None
     try:
-        order = supabase.table("orders").select("*").eq("id", oid).single().execute().data
-    except Exception:
-        pass
-    if order:
-        raw_items = supabase.table("order_items").select("*").eq("order_id", oid).execute().data or []
-        order["items"] = [
-            {"product": {"name": i["product_name"], "id": i["product_id"]}, "qty": i["qty"], "subtotal": i["subtotal"]}
-            for i in raw_items
-        ]
+        res = supabase.table("orders").select("*").eq("id", oid).single().execute()
+        if res.data:
+            raw_items = supabase.table("order_items").select("*").eq("order_id", oid).execute().data or []
+            order = {
+                "id": res.data["id"],
+                "name": res.data.get("name", ""),
+                "phone": res.data.get("phone", ""),
+                "address": res.data.get("address", ""),
+                "total": res.data.get("total", 0),
+                "status": res.data.get("status", "Pending"),
+                "items": [{"product": {"name": i["product_name"], "id": i["product_id"]}, "qty": i["qty"], "subtotal": i["subtotal"]} for i in raw_items]
+            }
+    except Exception as e:
+        app.logger.error(f"order_success error: {e}")
     return render_template("order_success.html", order=order, user=current_user(), cart_count=cart_count())
 
 
