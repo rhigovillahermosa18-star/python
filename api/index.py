@@ -339,5 +339,13 @@ def update_order(oid, status):
     return redirect(url_for("admin"))
 
 
+# --- SERVE STATIC IMAGES (local dev fallback) ---
+from flask import send_from_directory
+
+@app.route("/static/images/<path:filename>")
+def static_images(filename):
+    return send_from_directory(os.path.join(app.static_folder, "images"), filename)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
