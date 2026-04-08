@@ -12,7 +12,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
       <div>
         <span style="color:#8b5cf6;font-weight:800;font-size:1.1rem">#{{o.id}}</span>
-        <span style="color:#555;font-size:0.85rem;margin-left:10px">{{o.created_at[:10] if o.created_at else ''}}</span>
+        <span style="color:#555;font-size:0.85rem;margin-left:10px">{{o.created_at}}</span>
       </div>
       <span style="
         background:{% if o.status=='Pending' %}rgba(245,158,11,0.15){% elif o.status=='Shipped' %}rgba(139,92,246,0.15){% else %}rgba(56,239,125,0.15){% endif %};
