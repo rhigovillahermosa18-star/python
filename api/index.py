@@ -96,11 +96,12 @@ def build_order(o, items):
     }
 
 
-# --- SERVE STATIC IMAGES ---
-@app.route("/static/images/<path:filename>")
-def static_images(filename):
-    safe = os.path.basename(filename)
-    return send_from_directory(IMAGES_DIR, safe)
+# --- SERVE STATIC FILES ---
+@app.route("/static/<path:filename>")
+def static_files(filename):
+    safe_parts = [os.path.basename(p) for p in filename.replace("\\", "/").split("/")]
+    safe_path = os.path.join(*safe_parts) if safe_parts else ""
+    return send_from_directory(os.path.join(BASE_DIR, "static"), safe_path)
 
 
 # --- HOME ---
