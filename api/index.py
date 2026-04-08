@@ -217,34 +217,40 @@ def checkout():
     total = sum(i["subtotal"] for i in items)
     if request.method == "POST":
         u = current_user()
-        order_res = supabase.table("orders").insert({
-            "user_id": u["id"],
-            "username": u["username"],
-            "name": request.form["name"],
-            "address": request.form["address"],
-            "phone": request.form["phone"],
-            "total": total,
-            "status": "Pending"
-        }).execute()
-        order = order_res.data[0]
-        order_items = [
-            {
-                "order_id": order["id"],
-                "product_id": i["product"]["id"],
-                "product_name": i["product"]["name"],
-                "qty": i["qty"],
-                "subtotal": i["subtotal"]
-            }
-            for i in items
-        ]
-        supabase.table("order_items").insert(order_items).execute()
-        # Decrement stock
-        for i in items:
-            new_stock = max(0, i["product"]["stock"] - i["qty"])
-            supabase.table("products").update({"stock": new_stock}).eq("id", i["product"]["id"]).execute()
-        session["cart"] = {}
-        flash(f"Order #{order['id']} placed successfully!", "success")
-        return redirect(url_for("order_success", oid=order["id"]))
+        try:
+            order_res = supabase.table("orders").insert({
+                "user_id": u["id"],
+                "username": u["username"],
+                "name": request.form["name"],
+                "address": request.form["address"],
+                "phone": request.form["phone"],
+                "total": float(total),
+                "status": "Pending"
+            }).execute()
+            if not order_res.data:
+                raise Exception("Failed to create order")
+            order = order_res.data[0]
+            order_items = [
+                {
+                    "order_id": order["id"],
+                    "product_id": i["product"]["id"],
+                    "product_name": i["product"]["name"],
+                    "qty": int(i["qty"]),
+                    "subtotal": float(i["subtotal"])
+                }
+                for i in items
+            ]
+            supabase.table("order_items").insert(order_items).execute()
+            for i in items:
+                new_stock = max(0, int(i["product"]["stock"]) - int(i["qty"]))
+                supabase.table("products").update({"stock": new_stock}).eq("id", i["product"]["id"]).execute()
+            session["cart"] = {}
+            flash(f"Order #{order['id']} placed successfully!", "success")
+            return redirect(url_for("order_success", oid=order["id"]))
+        except Exception as e:
+            app.logger.error(f"Checkout error: {e}")
+            flash("Something went wrong placing your order. Please try again.", "danger")
+            return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
     return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
 
@@ -389,4 +395,6 @@ def update_order(oid, status):
 
 
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
     app.run(debug=True)
