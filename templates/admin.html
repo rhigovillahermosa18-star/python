@@ -37,10 +37,11 @@
   <div class="tab-pane fade show active" id="products">
     <div class="table-responsive table-dark-custom">
       <table class="table table-borderless mb-0">
-        <thead><tr><th>Product</th><th>Flavor</th><th>Nicotine</th><th>Size</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Image</th><th>Product</th><th>Flavor</th><th>Nicotine</th><th>Size</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead>
         <tbody>
         {% for p in products %}
         <tr>
+          <td><img src="{{ product_image(p) }}" style="width:45px;height:45px;object-fit:cover;border-radius:8px;"></td>
           <td style="color:#fff;font-weight:600">{{p.name}}</td>
           <td style="color:#aaa">{{p.flavor}}</td>
           <td><span class="badge-nic">{{p.nicotine}}mg</span></td>

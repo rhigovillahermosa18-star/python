@@ -3,7 +3,7 @@ import math
 import uuid
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
 from supabase import create_client, Client
 
 load_dotenv()
@@ -22,15 +22,30 @@ supabase: Client = create_client(
     os.environ.get("SUPABASE_KEY"),
 )
 
+PRODUCT_IMGS = {
+    "Mango Ice": "vape1.jpg",
+    "Blueberry Blast": "vape2.jpg",
+    "Strawberry Milk": "vape3.jpg",
+    "Mint Breeze": "vape4.jpg",
+    "Grape Soda": "vape5.jpg",
+    "Lychee Frost": "vape6.jpg",
+}
+
 
 # --- Helpers ---
 def get_product(pid):
-    res = supabase.table("products").select("*").eq("id", pid).single().execute()
-    return res.data
+    try:
+        res = supabase.table("products").select("*").eq("id", pid).single().execute()
+        return res.data
+    except Exception:
+        return None
 
 def get_user(uid):
-    res = supabase.table("users").select("*").eq("id", uid).single().execute()
-    return res.data
+    try:
+        res = supabase.table("users").select("*").eq("id", uid).single().execute()
+        return res.data
+    except Exception:
+        return None
 
 def current_user():
     return get_user(session["user_id"]) if "user_id" in session else None
@@ -42,14 +57,25 @@ def is_admin():
 def cart_count():
     return sum(v["qty"] for v in session.get("cart", {}).values())
 
+def product_image(p):
+    if p.get("image"):
+        return "/static/images/" + p["image"]
+    return "/static/images/" + PRODUCT_IMGS.get(p["name"], "vape1.jpg")
+
+
+# --- SERVE STATIC IMAGES ---
+@app.route("/static/images/<path:filename>")
+def static_images(filename):
+    return send_from_directory(os.path.join(app.static_folder, "images"), filename)
+
 
 # --- HOME ---
 @app.route("/")
 def home():
     if is_admin():
         return redirect(url_for("admin"))
-    products = supabase.table("products").select("*").limit(6).execute().data
-    return render_template("home.html", products=products, user=current_user(), cart_count=cart_count())
+    products = supabase.table("products").select("*").limit(6).execute().data or []
+    return render_template("home.html", products=products, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
 
 # --- SHOP ---
@@ -57,8 +83,8 @@ def home():
 def shop():
     if is_admin():
         return redirect(url_for("admin"))
-    products = supabase.table("products").select("*").execute().data
-    return render_template("shop.html", products=products, user=current_user(), cart_count=cart_count())
+    products = supabase.table("products").select("*").execute().data or []
+    return render_template("shop.html", products=products, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
 
 # --- REGISTER ---
@@ -84,7 +110,7 @@ def register():
             }).execute()
             flash("Account created! Please login.", "success")
             return redirect(url_for("login"))
-    return render_template("register.html", user=None, cart_count=cart_count())
+    return render_template("register.html", user=None, cart_count=0)
 
 
 # --- LOGIN ---
@@ -103,7 +129,7 @@ def login():
             flash(f"Welcome back, {u['username']}!", "success")
             return redirect(url_for("admin") if u["role"] == "admin" else url_for("home"))
         flash("Invalid username or password.", "danger")
-    return render_template("login.html", user=None, cart_count=cart_count())
+    return render_template("login.html", user=None, cart_count=0)
 
 
 # --- LOGOUT ---
@@ -146,7 +172,7 @@ def cart():
         if p:
             items.append({"product": p, "qty": v["qty"], "subtotal": v["qty"] * p["price"]})
     total = sum(i["subtotal"] for i in items)
-    return render_template("cart.html", items=items, total=total, user=current_user(), cart_count=cart_count())
+    return render_template("cart.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
 
 # --- UPDATE CART ---
@@ -202,23 +228,40 @@ def checkout():
         }).execute()
         order = order_res.data[0]
         order_items = [
-            {"order_id": order["id"], "product_id": i["product"]["id"], "product_name": i["product"]["name"], "qty": i["qty"], "subtotal": i["subtotal"]}
+            {
+                "order_id": order["id"],
+                "product_id": i["product"]["id"],
+                "product_name": i["product"]["name"],
+                "qty": i["qty"],
+                "subtotal": i["subtotal"]
+            }
             for i in items
         ]
         supabase.table("order_items").insert(order_items).execute()
+        # Decrement stock
+        for i in items:
+            new_stock = max(0, i["product"]["stock"] - i["qty"])
+            supabase.table("products").update({"stock": new_stock}).eq("id", i["product"]["id"]).execute()
         session["cart"] = {}
         flash(f"Order #{order['id']} placed successfully!", "success")
         return redirect(url_for("order_success", oid=order["id"]))
-    return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count())
+    return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
 
 # --- ORDER SUCCESS ---
 @app.route("/order/<int:oid>")
 def order_success(oid):
-    order = supabase.table("orders").select("*").eq("id", oid).single().execute().data
+    order = None
+    try:
+        order = supabase.table("orders").select("*").eq("id", oid).single().execute().data
+    except Exception:
+        pass
     if order:
-        raw_items = supabase.table("order_items").select("*").eq("order_id", oid).execute().data
-        order["items"] = [{"product": {"name": i["product_name"], "id": i["product_id"]}, "qty": i["qty"], "subtotal": i["subtotal"]} for i in raw_items]
+        raw_items = supabase.table("order_items").select("*").eq("order_id", oid).execute().data or []
+        order["items"] = [
+            {"product": {"name": i["product_name"], "id": i["product_id"]}, "qty": i["qty"], "subtotal": i["subtotal"]}
+            for i in raw_items
+        ]
     return render_template("order_success.html", order=order, user=current_user(), cart_count=cart_count())
 
 
@@ -227,10 +270,10 @@ def order_success(oid):
 def admin():
     if not is_admin():
         return redirect(url_for("home"))
-    products = supabase.table("products").select("*").execute().data
-    orders = supabase.table("orders").select("*").execute().data
-    users = supabase.table("users").select("*").execute().data
-    return render_template("admin.html", products=products, orders=orders, users=users, user=current_user(), cart_count=cart_count())
+    products = supabase.table("products").select("*").execute().data or []
+    orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
+    users = supabase.table("users").select("*").execute().data or []
+    return render_template("admin.html", products=products, orders=orders, users=users, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
 
 # --- ADMIN ADD PRODUCT ---
@@ -320,6 +363,11 @@ def admin_edit(pid):
 def admin_delete(pid):
     if not is_admin():
         return redirect(url_for("home"))
+    p = get_product(pid)
+    if p and p.get("image"):
+        old = os.path.join(app.static_folder, "images", p["image"])
+        if os.path.exists(old):
+            os.remove(old)
     supabase.table("products").delete().eq("id", pid).execute()
     flash("Product deleted.", "info")
     return redirect(url_for("admin"))
@@ -336,15 +384,8 @@ def update_order(oid, status):
         flash("Invalid order status.", "danger")
         return redirect(url_for("admin"))
     supabase.table("orders").update({"status": status}).eq("id", oid).execute()
+    flash(f"Order #{oid} marked as {status}.", "success")
     return redirect(url_for("admin"))
-
-
-# --- SERVE STATIC IMAGES (local dev fallback) ---
-from flask import send_from_directory
-
-@app.route("/static/images/<path:filename>")
-def static_images(filename):
-    return send_from_directory(os.path.join(app.static_folder, "images"), filename)
 
 
 if __name__ == "__main__":
