@@ -1,6 +1,7 @@
 import os
 import math
 import uuid
+import logging
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
@@ -22,14 +23,8 @@ supabase: Client = create_client(
     os.environ.get("SUPABASE_KEY"),
 )
 
-PRODUCT_IMGS = {
-    "Mango Ice": "vape1.jpg",
-    "Blueberry Blast": "vape2.jpg",
-    "Strawberry Milk": "vape3.jpg",
-    "Mint Breeze": "vape4.jpg",
-    "Grape Soda": "vape5.jpg",
-    "Lychee Frost": "vape6.jpg",
-}
+# Maps product id (1-based) to vape1.jpg ... vape6.jpg by cycling
+VAPE_IMGS = ["vape1.jpg", "vape2.jpg", "vape3.jpg", "vape4.jpg", "vape5.jpg", "vape6.jpg"]
 
 
 # --- Helpers ---
@@ -58,9 +53,12 @@ def cart_count():
     return sum(v["qty"] for v in session.get("cart", {}).values())
 
 def product_image(p):
+    # If admin uploaded a custom image, use it
     if p.get("image"):
         return "/static/images/" + p["image"]
-    return "/static/images/" + PRODUCT_IMGS.get(p["name"], "vape1.jpg")
+    # Otherwise fall back to vape1-6.jpg by product id
+    idx = (int(p.get("id", 1)) - 1) % len(VAPE_IMGS)
+    return "/static/images/" + VAPE_IMGS[idx]
 
 
 # --- SERVE STATIC IMAGES ---
@@ -249,7 +247,7 @@ def checkout():
             return redirect(url_for("order_success", oid=order["id"]))
         except Exception as e:
             app.logger.error(f"Checkout error: {e}")
-            flash("Something went wrong placing your order. Please try again.", "danger")
+            flash(f"Error placing order: {e}", "danger")
             return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
     return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
@@ -425,6 +423,5 @@ def update_order(oid, status):
 
 
 if __name__ == "__main__":
-    import logging
     logging.basicConfig(level=logging.DEBUG)
     app.run(debug=True)
