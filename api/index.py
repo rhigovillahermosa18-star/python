@@ -4,12 +4,15 @@ import uuid
 import logging
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
+from werkzeug.exceptions import NotFound
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
 from supabase import create_client, Client
 
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+IMAGES_DIR = os.path.join(BASE_DIR, "static", "images")
+ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 app = Flask(
     __name__,
@@ -23,22 +26,19 @@ supabase: Client = create_client(
     os.environ.get("SUPABASE_KEY"),
 )
 
-# Maps product id (1-based) to vape1.jpg ... vape6.jpg by cycling
 VAPE_IMGS = ["vape1.jpg", "vape2.jpg", "vape3.jpg", "vape4.jpg", "vape5.jpg", "vape6.jpg"]
 
 
 # --- Helpers ---
 def get_product(pid):
     try:
-        res = supabase.table("products").select("*").eq("id", pid).single().execute()
-        return res.data
+        return supabase.table("products").select("*").eq("id", pid).single().execute().data
     except Exception:
         return None
 
 def get_user(uid):
     try:
-        res = supabase.table("users").select("*").eq("id", uid).single().execute()
-        return res.data
+        return supabase.table("users").select("*").eq("id", uid).single().execute().data
     except Exception:
         return None
 
@@ -53,18 +53,54 @@ def cart_count():
     return sum(v["qty"] for v in session.get("cart", {}).values())
 
 def product_image(p):
-    # If admin uploaded a custom image, use it
-    if p.get("image"):
-        return "/static/images/" + p["image"]
-    # Otherwise fall back to vape1-6.jpg by product id
+    img = p.get("image", "")
+    if img:
+        safe = os.path.basename(img)
+        full = os.path.join(IMAGES_DIR, safe)
+        if os.path.exists(full):
+            return "/static/images/" + safe
     idx = (int(p.get("id", 1)) - 1) % len(VAPE_IMGS)
     return "/static/images/" + VAPE_IMGS[idx]
+
+def save_image(file):
+    """Saves uploaded image safely, returns filename or empty string."""
+    if not file or not file.filename:
+        return ""
+    ext = os.path.splitext(secure_filename(file.filename))[1].lower()
+    if ext not in ALLOWED_EXTS:
+        return ""
+    filename = uuid.uuid4().hex + ext
+    file.save(os.path.join(IMAGES_DIR, filename))
+    return filename
+
+def delete_image(filename):
+    """Safely deletes an image file."""
+    if not filename:
+        return
+    safe = os.path.basename(filename)
+    path = os.path.join(IMAGES_DIR, safe)
+    if os.path.exists(path):
+        os.remove(path)
+
+def build_order(o, items):
+    """Build a plain dict from a Supabase order row."""
+    return {
+        "id": o["id"],
+        "name": o.get("name", ""),
+        "phone": o.get("phone", ""),
+        "address": o.get("address", ""),
+        "total": o.get("total", 0),
+        "status": o.get("status", "Pending"),
+        "created_at": str(o.get("created_at", ""))[:10],
+        "items": items
+    }
 
 
 # --- SERVE STATIC IMAGES ---
 @app.route("/static/images/<path:filename>")
 def static_images(filename):
-    return send_from_directory(os.path.join(app.static_folder, "images"), filename)
+    safe = os.path.basename(filename)
+    return send_from_directory(IMAGES_DIR, safe)
 
 
 # --- HOME ---
@@ -181,9 +217,8 @@ def update_cart(pid):
     qty = int(request.form.get("qty", 1))
     if qty <= 0:
         cart.pop(key, None)
-    else:
-        if key in cart:
-            cart[key]["qty"] = qty
+    elif key in cart:
+        cart[key]["qty"] = qty
     session["cart"] = cart
     return redirect(url_for("cart"))
 
@@ -226,9 +261,9 @@ def checkout():
                 "status": "Pending"
             }).execute()
             if not order_res.data:
-                raise Exception("Failed to create order")
+                raise ValueError("Failed to create order — check Supabase RLS policies")
             order = order_res.data[0]
-            order_items = [
+            supabase.table("order_items").insert([
                 {
                     "order_id": order["id"],
                     "product_id": i["product"]["id"],
@@ -237,18 +272,16 @@ def checkout():
                     "subtotal": float(i["subtotal"])
                 }
                 for i in items
-            ]
-            supabase.table("order_items").insert(order_items).execute()
+            ]).execute()
             for i in items:
                 new_stock = max(0, int(i["product"]["stock"]) - int(i["qty"]))
                 supabase.table("products").update({"stock": new_stock}).eq("id", i["product"]["id"]).execute()
             session["cart"] = {}
             flash(f"Order #{order['id']} placed successfully!", "success")
             return redirect(url_for("order_success", oid=order["id"]))
-        except Exception as e:
-            app.logger.error(f"Checkout error: {e}")
+        except (ValueError, RuntimeError, KeyError) as e:
+            app.logger.error("Checkout error: %s", e)
             flash(f"Error placing order: {e}", "danger")
-            return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
     return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
 
@@ -260,25 +293,15 @@ def my_orders():
     if not current_user():
         return redirect(url_for("login"))
     u = current_user()
+    orders = []
     try:
-        raw_orders = supabase.table("orders").select("*").eq("user_id", u["id"]).order("id", desc=True).execute().data or []
-        orders = []
-        for o in raw_orders:
-            items = supabase.table("order_items").select("*").eq("order_id", o["id"]).execute().data or []
-            orders.append({
-                "id": o["id"],
-                "name": o.get("name", ""),
-                "phone": o.get("phone", ""),
-                "address": o.get("address", ""),
-                "total": o.get("total", 0),
-                "status": o.get("status", "Pending"),
-                "created_at": str(o.get("created_at", ""))[:10],
-                "items": items
-            })
-    except Exception as e:
-        app.logger.error(f"my_orders error: {e}")
+        raw = supabase.table("orders").select("*").eq("user_id", u["id"]).order("id", desc=True).execute().data or []
+        for o in raw:
+            raw_items = supabase.table("order_items").select("*").eq("order_id", o["id"]).execute().data or []
+            orders.append(build_order(o, raw_items))
+    except (ValueError, RuntimeError, KeyError) as e:
+        app.logger.error("my_orders error: %s", e)
         flash(f"Error loading orders: {e}", "danger")
-        orders = []
     return render_template("my_orders.html", orders=orders, user=u, cart_count=cart_count())
 
 
@@ -290,17 +313,12 @@ def order_success(oid):
         res = supabase.table("orders").select("*").eq("id", oid).single().execute()
         if res.data:
             raw_items = supabase.table("order_items").select("*").eq("order_id", oid).execute().data or []
-            order = {
-                "id": res.data["id"],
-                "name": res.data.get("name", ""),
-                "phone": res.data.get("phone", ""),
-                "address": res.data.get("address", ""),
-                "total": res.data.get("total", 0),
-                "status": res.data.get("status", "Pending"),
-                "items": [{"product": {"name": i["product_name"], "id": i["product_id"]}, "qty": i["qty"], "subtotal": i["subtotal"]} for i in raw_items]
-            }
-    except Exception as e:
-        app.logger.error(f"order_success error: {e}")
+            order = build_order(res.data, [
+                {"product": {"name": i["product_name"], "id": i["product_id"]}, "qty": i["qty"], "subtotal": i["subtotal"]}
+                for i in raw_items
+            ])
+    except (ValueError, RuntimeError, KeyError) as e:
+        app.logger.error("order_success error: %s", e)
     return render_template("order_success.html", order=order, user=current_user(), cart_count=cart_count())
 
 
@@ -327,17 +345,11 @@ def admin_add():
             price = float(request.form["price"])
             stock = int(request.form["stock"])
             if math.isnan(price) or math.isinf(price) or price < 0:
-                raise ValueError
+                raise ValueError("Invalid price")
         except (ValueError, TypeError):
             flash("Invalid numeric values provided.", "danger")
             return render_template("admin_form.html", item=None, user=current_user(), cart_count=cart_count())
-        image_filename = ""
-        file = request.files.get("image")
-        if file and file.filename:
-            ext = os.path.splitext(secure_filename(file.filename))[1].lower()
-            if ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
-                image_filename = uuid.uuid4().hex + ext
-                file.save(os.path.join(app.static_folder, "images", image_filename))
+        image_filename = save_image(request.files.get("image"))
         supabase.table("products").insert({
             "name": request.form["name"],
             "flavor": request.form["flavor"],
@@ -368,21 +380,15 @@ def admin_edit(pid):
             price = float(request.form["price"])
             stock = int(request.form["stock"])
             if math.isnan(price) or math.isinf(price) or price < 0:
-                raise ValueError
+                raise ValueError("Invalid price")
         except (ValueError, TypeError):
             flash("Invalid numeric values provided.", "danger")
             return render_template("admin_form.html", item=p, user=current_user(), cart_count=cart_count())
         image_filename = p.get("image", "")
-        file = request.files.get("image")
-        if file and file.filename:
-            ext = os.path.splitext(secure_filename(file.filename))[1].lower()
-            if ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
-                if image_filename:
-                    old = os.path.join(app.static_folder, "images", image_filename)
-                    if os.path.exists(old):
-                        os.remove(old)
-                image_filename = uuid.uuid4().hex + ext
-                file.save(os.path.join(app.static_folder, "images", image_filename))
+        new_file = save_image(request.files.get("image"))
+        if new_file:
+            delete_image(image_filename)
+            image_filename = new_file
         supabase.table("products").update({
             "name": request.form["name"],
             "flavor": request.form["flavor"],
@@ -403,11 +409,9 @@ def admin_delete(pid):
     if not is_admin():
         return redirect(url_for("home"))
     p = get_product(pid)
-    if p and p.get("image"):
-        old = os.path.join(app.static_folder, "images", p["image"])
-        if os.path.exists(old):
-            os.remove(old)
-    supabase.table("products").delete().eq("id", pid).execute()
+    if p:
+        delete_image(p.get("image", ""))
+        supabase.table("products").delete().eq("id", pid).execute()
     flash("Product deleted.", "info")
     return redirect(url_for("admin"))
 
@@ -429,4 +433,4 @@ def update_order(oid, status):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    app.run(debug=True)
+    app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1")
