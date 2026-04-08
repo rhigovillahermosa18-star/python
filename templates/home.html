@@ -34,13 +34,11 @@
 {% for p in products %}
 <div class="col-md-4 col-sm-6">
   <div class="card-dark p-4 h-100 d-flex flex-column">
-    <div style="background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(236,72,153,0.15));border-radius:12px;height:140px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:3.5rem;overflow:hidden;">
-      {% set emojis = {"mango":"🥭","blueberry":"🫐","strawberry":"🍓","mint":"🌿","grape":"🍇","lychee":"🍈"} %}
-      {% if p.image %}
-      <img src="/static/images/{{p.image}}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
-      {% else %}
-      {{ emojis.get(p.flavor|lower, "💨") }}
-      {% endif %}
+    <div style="border-radius:12px;height:140px;overflow:hidden;margin-bottom:16px;position:relative;">
+      {% set product_imgs = {"Mango Ice":"vape1.jpg","Blueberry Blast":"vape2.jpg","Strawberry Milk":"vape3.jpg","Mint Breeze":"vape4.jpg","Grape Soda":"vape5.jpg","Lychee Frost":"vape6.jpg"} %}
+      <img src="{% if p.image %}/static/images/{{p.image}}{% else %}/static/images/{{ product_imgs.get(p.name, 'vape1.jpg') }}{% endif %}"
+        style="width:100%;height:100%;object-fit:cover;" alt="{{p.name}}">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(15,15,26,0.7) 0%,transparent 60%);border-radius:12px;"></div>
     </div>
     <span class="badge-nic mb-2">{{p.nicotine}}mg · {{p.size}}ml</span>
     <h5 style="color:#fff;font-weight:700">{{p.name}}</h5>
