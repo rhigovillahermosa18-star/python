@@ -3,12 +3,47 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2 class="section-title mb-0"><i class="fas fa-store"></i> Our Products</h2>
-  <span style="color:#888">{{products|length}} products available</span>
+  <span style="color:#888" id="productCount">{{products|length}} products available</span>
 </div>
 
-<div class="row g-4">
+<!-- SEARCH & FILTER -->
+<div class="card-dark p-3 mb-4">
+  <div class="row g-3 align-items-center">
+    <div class="col-md-5">
+      <div class="input-group">
+        <span class="input-group-text" style="background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.3);color:#8b5cf6;border-right:none;"><i class="fas fa-search"></i></span>
+        <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="border-left:none;" oninput="filterProducts()">
+      </div>
+    </div>
+    <div class="col-md-3">
+      <select id="nicotineFilter" class="form-select" onchange="filterProducts()">
+        <option value="">All Nicotine</option>
+        <option value="25">25mg</option>
+        <option value="35">35mg</option>
+        <option value="50">50mg</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select id="sizeFilter" class="form-select" onchange="filterProducts()">
+        <option value="">All Sizes</option>
+        <option value="30">30ml</option>
+        <option value="60">60ml</option>
+      </select>
+    </div>
+    <div class="col-md-1">
+      <button class="btn btn-outline-purple w-100" onclick="clearFilters()"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCTS GRID -->
+<div class="row g-4" id="productsGrid">
 {% for p in products %}
-<div class="col-lg-4 col-md-6">
+<div class="col-lg-4 col-md-6 product-card"
+  data-name="{{p.name|lower}}"
+  data-flavor="{{p.flavor|lower}}"
+  data-nicotine="{{p.nicotine}}"
+  data-size="{{p.size}}">
   <a href="/product/{{p.id}}" style="text-decoration:none;">
   <div class="card-dark p-4 h-100 d-flex flex-column" style="cursor:pointer;">
     <div style="border-radius:12px;height:180px;overflow:hidden;margin-bottom:16px;position:relative;">
@@ -22,7 +57,7 @@
     </div>
     <h5 style="color:#fff;font-weight:700">{{p.name}}</h5>
     <p style="color:{% if p.stock < 5 %}#f87171{% else %}#888{% endif %};font-size:0.85rem;flex-grow:1">
-      {% if p.stock < 5 %}Only {{p.stock}} left!{% else %}Stock: {{p.stock}} units{% endif %}
+      {% if p.stock == 0 %}Out of Stock{% elif p.stock < 5 %}Only {{p.stock}} left!{% else %}Stock: {{p.stock}} units{% endif %}
     </p>
     <div class="d-flex justify-content-between align-items-center mt-3">
       <span style="font-size:1.5rem;font-weight:800;color:#8b5cf6">₱{{p.price}}</span>
@@ -40,5 +75,47 @@
 </div>
 {% endfor %}
 </div>
+
+<!-- NO RESULTS -->
+<div id="noResults" class="text-center py-5" style="display:none;">
+  <div style="font-size:4rem;margin-bottom:16px;">🔍</div>
+  <h4 style="color:#aaa">No products found</h4>
+  <p style="color:#666">Try a different search or filter.</p>
+  <button class="btn btn-outline-purple mt-2" onclick="clearFilters()"><i class="fas fa-times"></i> Clear Filters</button>
+</div>
+
+<script>
+function filterProducts() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const nicotine = document.getElementById('nicotineFilter').value;
+  const size = document.getElementById('sizeFilter').value;
+  const cards = document.querySelectorAll('.product-card');
+  let visible = 0;
+  cards.forEach(card => {
+    const name = card.dataset.name;
+    const flavor = card.dataset.flavor;
+    const nic = card.dataset.nicotine;
+    const sz = card.dataset.size;
+    const matchSearch = !search || name.includes(search) || flavor.includes(search);
+    const matchNic = !nicotine || nic === nicotine;
+    const matchSize = !size || sz === size;
+    if (matchSearch && matchNic && matchSize) {
+      card.style.display = '';
+      visible++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  document.getElementById('productCount').textContent = visible + ' products available';
+  document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('nicotineFilter').value = '';
+  document.getElementById('sizeFilter').value = '';
+  filterProducts();
+}
+</script>
 
 {% endblock %}
