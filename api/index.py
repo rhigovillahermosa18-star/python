@@ -1,8 +1,12 @@
 import os
 import math
 import uuid
+from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, session, flash
+from supabase import create_client, Client
+
+load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -13,32 +17,23 @@ app = Flask(
 )
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 
-# --- In-memory data ---
-users = [{"id": 1, "username": "admin", "password": os.environ.get("ADMIN_PASSWORD", "admin123"), "email": "admin@vape.com", "role": "admin"}]
-next_user_id = 2
-
-products = [
-    {"id": 1, "name": "Mango Ice", "flavor": "Mango", "nicotine": 50, "size": 30, "price": 350.00, "stock": 20, "image": ""},
-    {"id": 2, "name": "Blueberry Blast", "flavor": "Blueberry", "nicotine": 35, "size": 60, "price": 480.00, "stock": 15, "image": ""},
-    {"id": 3, "name": "Strawberry Milk", "flavor": "Strawberry", "nicotine": 25, "size": 30, "price": 320.00, "stock": 25, "image": ""},
-    {"id": 4, "name": "Mint Breeze", "flavor": "Mint", "nicotine": 50, "size": 30, "price": 350.00, "stock": 18, "image": ""},
-    {"id": 5, "name": "Grape Soda", "flavor": "Grape", "nicotine": 35, "size": 60, "price": 500.00, "stock": 10, "image": ""},
-    {"id": 6, "name": "Lychee Frost", "flavor": "Lychee", "nicotine": 50, "size": 30, "price": 380.00, "stock": 12, "image": ""},
-]
-next_product_id = 7
-
-orders = []
-next_order_id = 1
+supabase: Client = create_client(
+    os.environ.get("SUPABASE_URL"),
+    os.environ.get("SUPABASE_KEY"),
+)
 
 
+# --- Helpers ---
 def get_product(pid):
-    return next((p for p in products if p["id"] == pid), None)
+    res = supabase.table("products").select("*").eq("id", pid).single().execute()
+    return res.data
 
 def get_user(uid):
-    return next((u for u in users if u["id"] == uid), None)
+    res = supabase.table("users").select("*").eq("id", uid).single().execute()
+    return res.data
 
 def current_user():
-    return get_user(session.get("user_id")) if "user_id" in session else None
+    return get_user(session["user_id"]) if "user_id" in session else None
 
 def is_admin():
     u = current_user()
@@ -53,8 +48,8 @@ def cart_count():
 def home():
     if is_admin():
         return redirect(url_for("admin"))
-    featured = products[:6]
-    return render_template("home.html", products=featured, user=current_user(), cart_count=cart_count())
+    products = supabase.table("products").select("*").limit(6).execute().data
+    return render_template("home.html", products=products, user=current_user(), cart_count=cart_count())
 
 
 # --- SHOP ---
@@ -62,26 +57,31 @@ def home():
 def shop():
     if is_admin():
         return redirect(url_for("admin"))
+    products = supabase.table("products").select("*").execute().data
     return render_template("shop.html", products=products, user=current_user(), cart_count=cart_count())
 
 
 # --- REGISTER ---
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    global next_user_id
     if current_user():
         return redirect(url_for("home"))
     if request.method == "POST":
         username = request.form["username"].strip()
         email = request.form["email"].strip()
         password = request.form["password"]
-        if any(u["username"] == username for u in users):
-            flash("Username already taken.", "danger")
-        elif any(u["email"] == email for u in users):
-            flash("Email already registered.", "danger")
+        existing = supabase.table("users").select("id").or_(
+            f"username.eq.{username},email.eq.{email}"
+        ).execute().data
+        if existing:
+            flash("Username or email already taken.", "danger")
         else:
-            users.append({"id": next_user_id, "username": username, "password": password, "email": email, "role": "customer"})
-            next_user_id += 1
+            supabase.table("users").insert({
+                "username": username,
+                "email": email,
+                "password": password,
+                "role": "customer"
+            }).execute()
             flash("Account created! Please login.", "success")
             return redirect(url_for("login"))
     return render_template("register.html", user=None, cart_count=cart_count())
@@ -95,7 +95,8 @@ def login():
     if request.method == "POST":
         username = request.form["username"].strip()
         password = request.form["password"]
-        u = next((x for x in users if x["username"] == username and x["password"] == password), None)
+        res = supabase.table("users").select("*").eq("username", username).eq("password", password).execute()
+        u = res.data[0] if res.data else None
         if u:
             session["user_id"] = u["id"]
             session["cart"] = session.get("cart", {})
@@ -175,7 +176,6 @@ def remove_from_cart(pid):
 # --- CHECKOUT ---
 @app.route("/checkout", methods=["GET", "POST"])
 def checkout():
-    global next_order_id
     if is_admin():
         return redirect(url_for("admin"))
     if not current_user():
@@ -190,19 +190,22 @@ def checkout():
             items.append({"product": p, "qty": v["qty"], "subtotal": v["qty"] * p["price"]})
     total = sum(i["subtotal"] for i in items)
     if request.method == "POST":
-        order = {
-            "id": next_order_id,
-            "user_id": current_user()["id"],
-            "username": current_user()["username"],
+        u = current_user()
+        order_res = supabase.table("orders").insert({
+            "user_id": u["id"],
+            "username": u["username"],
             "name": request.form["name"],
             "address": request.form["address"],
             "phone": request.form["phone"],
-            "items": items,
             "total": total,
             "status": "Pending"
-        }
-        orders.append(order)
-        next_order_id += 1
+        }).execute()
+        order = order_res.data[0]
+        order_items = [
+            {"order_id": order["id"], "product_id": i["product"]["id"], "product_name": i["product"]["name"], "qty": i["qty"], "subtotal": i["subtotal"]}
+            for i in items
+        ]
+        supabase.table("order_items").insert(order_items).execute()
         session["cart"] = {}
         flash(f"Order #{order['id']} placed successfully!", "success")
         return redirect(url_for("order_success", oid=order["id"]))
@@ -212,7 +215,10 @@ def checkout():
 # --- ORDER SUCCESS ---
 @app.route("/order/<int:oid>")
 def order_success(oid):
-    order = next((o for o in orders if o["id"] == oid), None)
+    order = supabase.table("orders").select("*").eq("id", oid).single().execute().data
+    if order:
+        raw_items = supabase.table("order_items").select("*").eq("order_id", oid).execute().data
+        order["items"] = [{"product": {"name": i["product_name"], "id": i["product_id"]}, "qty": i["qty"], "subtotal": i["subtotal"]} for i in raw_items]
     return render_template("order_success.html", order=order, user=current_user(), cart_count=cart_count())
 
 
@@ -221,13 +227,15 @@ def order_success(oid):
 def admin():
     if not is_admin():
         return redirect(url_for("home"))
+    products = supabase.table("products").select("*").execute().data
+    orders = supabase.table("orders").select("*").execute().data
+    users = supabase.table("users").select("*").execute().data
     return render_template("admin.html", products=products, orders=orders, users=users, user=current_user(), cart_count=cart_count())
 
 
 # --- ADMIN ADD PRODUCT ---
 @app.route("/admin/add", methods=["GET", "POST"])
 def admin_add():
-    global next_product_id
     if not is_admin():
         return redirect(url_for("home"))
     if request.method == "POST":
@@ -237,7 +245,7 @@ def admin_add():
             price = float(request.form["price"])
             stock = int(request.form["stock"])
             if math.isnan(price) or math.isinf(price) or price < 0:
-                raise ValueError("Invalid price")
+                raise ValueError
         except (ValueError, TypeError):
             flash("Invalid numeric values provided.", "danger")
             return render_template("admin_form.html", item=None, user=current_user(), cart_count=cart_count())
@@ -248,8 +256,7 @@ def admin_add():
             if ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
                 image_filename = uuid.uuid4().hex + ext
                 file.save(os.path.join(app.static_folder, "images", image_filename))
-        products.append({
-            "id": next_product_id,
+        supabase.table("products").insert({
             "name": request.form["name"],
             "flavor": request.form["flavor"],
             "nicotine": nicotine,
@@ -257,8 +264,7 @@ def admin_add():
             "price": price,
             "stock": stock,
             "image": image_filename
-        })
-        next_product_id += 1
+        }).execute()
         flash("Product added!", "success")
         return redirect(url_for("admin"))
     return render_template("admin_form.html", item=None, user=current_user(), cart_count=cart_count())
@@ -280,27 +286,30 @@ def admin_edit(pid):
             price = float(request.form["price"])
             stock = int(request.form["stock"])
             if math.isnan(price) or math.isinf(price) or price < 0:
-                raise ValueError("Invalid price")
+                raise ValueError
         except (ValueError, TypeError):
             flash("Invalid numeric values provided.", "danger")
             return render_template("admin_form.html", item=p, user=current_user(), cart_count=cart_count())
+        image_filename = p.get("image", "")
         file = request.files.get("image")
         if file and file.filename:
             ext = os.path.splitext(secure_filename(file.filename))[1].lower()
             if ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
-                if p.get("image"):
-                    old = os.path.join(app.static_folder, "images", p["image"])
+                if image_filename:
+                    old = os.path.join(app.static_folder, "images", image_filename)
                     if os.path.exists(old):
                         os.remove(old)
                 image_filename = uuid.uuid4().hex + ext
                 file.save(os.path.join(app.static_folder, "images", image_filename))
-                p["image"] = image_filename
-        p["name"] = request.form["name"]
-        p["flavor"] = request.form["flavor"]
-        p["nicotine"] = nicotine
-        p["size"] = size
-        p["price"] = price
-        p["stock"] = stock
+        supabase.table("products").update({
+            "name": request.form["name"],
+            "flavor": request.form["flavor"],
+            "nicotine": nicotine,
+            "size": size,
+            "price": price,
+            "stock": stock,
+            "image": image_filename
+        }).eq("id", pid).execute()
         flash("Product updated!", "success")
         return redirect(url_for("admin"))
     return render_template("admin_form.html", item=p, user=current_user(), cart_count=cart_count())
@@ -309,10 +318,9 @@ def admin_edit(pid):
 # --- ADMIN DELETE PRODUCT ---
 @app.route("/admin/delete/<int:pid>")
 def admin_delete(pid):
-    global products
     if not is_admin():
         return redirect(url_for("home"))
-    products = [p for p in products if p["id"] != pid]
+    supabase.table("products").delete().eq("id", pid).execute()
     flash("Product deleted.", "info")
     return redirect(url_for("admin"))
 
@@ -327,9 +335,7 @@ def update_order(oid, status):
     if status not in VALID_STATUSES:
         flash("Invalid order status.", "danger")
         return redirect(url_for("admin"))
-    order = next((o for o in orders if o["id"] == oid), None)
-    if order:
-        order["status"] = status
+    supabase.table("orders").update({"status": status}).eq("id", oid).execute()
     return redirect(url_for("admin"))
 
 
