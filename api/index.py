@@ -55,10 +55,7 @@ def cart_count():
 def product_image(p):
     img = p.get("image", "")
     if img:
-        safe = os.path.basename(img)
-        full = os.path.join(IMAGES_DIR, safe)
-        if os.path.exists(full):
-            return "/static/images/" + safe
+        return "/static/images/" + os.path.basename(img)
     idx = (int(p.get("id", 1)) - 1) % len(VAPE_IMGS)
     return "/static/images/" + VAPE_IMGS[idx]
 
@@ -96,7 +93,7 @@ def build_order(o, items):
     }
 
 
-# --- SERVE STATIC FILES ---
+# --- SERVE STATIC FILES (local dev only, Vercel handles this via CDN) ---
 @app.route("/static/<path:filename>")
 def static_files(filename):
     safe_parts = [os.path.basename(p) for p in filename.replace("\\", "/").split("/")]
