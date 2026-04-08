@@ -254,6 +254,21 @@ def checkout():
     return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
 
+# --- MY ORDERS ---
+@app.route("/orders")
+def my_orders():
+    if is_admin():
+        return redirect(url_for("admin"))
+    if not current_user():
+        return redirect(url_for("login"))
+    u = current_user()
+    orders = supabase.table("orders").select("*").eq("user_id", u["id"]).order("id", desc=True).execute().data or []
+    for o in orders:
+        items = supabase.table("order_items").select("*").eq("order_id", o["id"]).execute().data or []
+        o["items"] = items
+    return render_template("my_orders.html", orders=orders, user=u, cart_count=cart_count())
+
+
 # --- ORDER SUCCESS ---
 @app.route("/order/<int:oid>")
 def order_success(oid):

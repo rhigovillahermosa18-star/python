@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2 class="section-title mb-4"><i class="fas fa-box"></i> My Orders</h2>
+
+{% if orders %}
+<div class="d-flex flex-column gap-4">
+  {% for o in orders %}
+  <div class="card-dark p-4">
+
+    <!-- Order Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <div>
+        <span style="color:#8b5cf6;font-weight:800;font-size:1.1rem">#{{o.id}}</span>
+        <span style="color:#555;font-size:0.85rem;margin-left:10px">{{o.created_at[:10] if o.created_at else ''}}</span>
+      </div>
+      <span style="
+        background:{% if o.status=='Pending' %}rgba(245,158,11,0.15){% elif o.status=='Shipped' %}rgba(139,92,246,0.15){% else %}rgba(56,239,125,0.15){% endif %};
+        color:{% if o.status=='Pending' %}#f59e0b{% elif o.status=='Shipped' %}#a78bfa{% else %}#38ef7d{% endif %};
+        border:1px solid {% if o.status=='Pending' %}rgba(245,158,11,0.3){% elif o.status=='Shipped' %}rgba(139,92,246,0.3){% else %}rgba(56,239,125,0.3){% endif %};
+        border-radius:20px;padding:4px 16px;font-size:0.85rem;font-weight:600">
+        <i class="fas fa-{% if o.status=='Pending' %}clock{% elif o.status=='Shipped' %}truck{% else %}check-circle{% endif %}"></i>
+        {{o.status}}
+      </span>
+    </div>
+
+    <!-- Order Items -->
+    <div class="mb-3">
+      {% for item in o.items %}
+      <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div class="d-flex align-items-center gap-3">
+          <div style="color:#fff;font-weight:600">{{item.product_name}}</div>
+          <span style="color:#888;font-size:0.85rem">x{{item.qty}}</span>
+        </div>
+        <span style="color:#8b5cf6;font-weight:700">₱{{item.subtotal}}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Order Footer -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div style="color:#aaa;font-size:0.88rem">
+        <i class="fas fa-map-marker-alt" style="color:#8b5cf6;margin-right:6px"></i>{{o.address}}
+        <span style="margin-left:14px"><i class="fas fa-phone" style="color:#8b5cf6;margin-right:6px"></i>{{o.phone}}</span>
+      </div>
+      <div style="color:#fff;font-weight:800;font-size:1.1rem">
+        Total: <span style="color:#8b5cf6">₱{{o.total}}</span>
+      </div>
+    </div>
+
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5">
+  <div style="font-size:5rem;margin-bottom:20px">📦</div>
+  <h4 style="color:#aaa">No orders yet</h4>
+  <p style="color:#666">You haven't placed any orders. Start shopping!</p>
+  <a href="/shop" class="btn btn-purple mt-3 px-5"><i class="fas fa-store"></i> Browse Shop</a>
+</div>
+{% endif %}
+
+{% endblock %}
