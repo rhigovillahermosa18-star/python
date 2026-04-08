@@ -262,10 +262,20 @@ def my_orders():
     if not current_user():
         return redirect(url_for("login"))
     u = current_user()
-    orders = supabase.table("orders").select("*").eq("user_id", u["id"]).order("id", desc=True).execute().data or []
-    for o in orders:
+    raw_orders = supabase.table("orders").select("*").eq("user_id", u["id"]).order("id", desc=True).execute().data or []
+    orders = []
+    for o in raw_orders:
         items = supabase.table("order_items").select("*").eq("order_id", o["id"]).execute().data or []
-        o["items"] = items
+        orders.append({
+            "id": o["id"],
+            "name": o.get("name", ""),
+            "phone": o.get("phone", ""),
+            "address": o.get("address", ""),
+            "total": o.get("total", 0),
+            "status": o.get("status", "Pending"),
+            "created_at": o.get("created_at", ""),
+            "items": items
+        })
     return render_template("my_orders.html", orders=orders, user=u, cart_count=cart_count())
 
 
