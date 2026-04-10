@@ -265,15 +265,17 @@ def checkout():
     if request.method == "POST":
         u = current_user()
         try:
-            order_res = supabase.table("orders").insert({
+            order_payload = {
                 "user_id": u["id"],
-                "username": u["username"],
                 "name": request.form["name"],
                 "address": request.form["address"],
                 "phone": request.form["phone"],
                 "total": float(total),
                 "status": "Pending"
-            }).execute()
+            }
+            if "username" in u:
+                order_payload["username"] = u["username"]
+            order_res = supabase.table("orders").insert(order_payload).execute()
             if not order_res.data:
                 raise ValueError("Failed to create order — check Supabase RLS policies")
             order = order_res.data[0]
@@ -462,6 +464,25 @@ def update_order(oid, status):
     supabase.table("orders").update({"status": status}).eq("id", oid).execute()
     flash(f"Order #{oid} marked as {status}.", "success")
     return redirect(url_for("admin"))
+
+
+# --- DEBUG (remove after fixing) ---
+@app.route("/debug/test-db")
+def debug_test_db():
+    results = {}
+    try:
+        results["orders_select"] = str(supabase.table("orders").select("id").limit(1).execute())
+    except Exception as e:
+        results["orders_select"] = f"ERROR: {e}"
+    try:
+        results["order_items_select"] = str(supabase.table("order_items").select("id").limit(1).execute())
+    except Exception as e:
+        results["order_items_select"] = f"ERROR: {e}"
+    try:
+        results["orders_columns"] = str(supabase.table("orders").select("*").limit(1).execute())
+    except Exception as e:
+        results["orders_columns"] = f"ERROR: {e}"
+    return "<pre>" + "\n\n".join(f"{k}:\n{v}" for k, v in results.items()) + "</pre>"
 
 
 if __name__ == "__main__":
