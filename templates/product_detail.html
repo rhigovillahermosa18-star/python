@@ -69,6 +69,66 @@
   </div>
 </div>
 
+<!-- REVIEWS SECTION -->
+<div class="mt-5">
+  <h4 style="color:#fff;font-weight:700;margin-bottom:20px"><i class="fas fa-star" style="color:#f59e0b"></i> Customer Reviews</h4>
+
+  {% if user %}
+  <div class="card-dark p-4 mb-4">
+    <h6 style="color:#aaa;margin-bottom:16px">Leave a Review</h6>
+    <form method="POST" action="/review/{{product.id}}">
+      <div class="mb-3">
+        <label style="color:#aaa;font-size:0.9rem">Rating</label>
+        <div class="d-flex gap-2 mt-1">
+          {% for i in range(1,6) %}
+          <label style="cursor:pointer">
+            <input type="radio" name="rating" value="{{i}}" required style="display:none" class="star-radio">
+            <i class="fas fa-star star-btn" data-val="{{i}}" style="font-size:1.5rem;color:#444;cursor:pointer"></i>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="mb-3">
+        <textarea name="comment" class="form-control" rows="2" placeholder="Write your review..." required></textarea>
+      </div>
+      <button class="btn btn-purple"><i class="fas fa-paper-plane"></i> Submit Review</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if reviews %}
+  <div class="d-flex flex-column gap-3">
+    {% for r in reviews %}
+    <div class="card-dark p-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span style="color:#8b5cf6;font-weight:700">{{r.username}}</span>
+        <span style="color:#555;font-size:0.8rem">{{r.created_at}}</span>
+      </div>
+      <div class="mb-1">
+        {% for i in range(r.rating) %}<i class="fas fa-star" style="color:#f59e0b;font-size:0.85rem"></i>{% endfor %}
+        {% for i in range(5 - r.rating) %}<i class="fas fa-star" style="color:#333;font-size:0.85rem"></i>{% endfor %}
+      </div>
+      <p style="color:#aaa;font-size:0.9rem;margin:0">{{r.comment}}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="color:#666">No reviews yet. Be the first to review!</p>
+  {% endif %}
+</div>
+
+<script>
+  document.querySelectorAll('.star-btn').forEach(star => {
+    star.addEventListener('click', function() {
+      const val = parseInt(this.dataset.val);
+      document.querySelectorAll('.star-btn').forEach((s, i) => {
+        s.style.color = i < val ? '#f59e0b' : '#444';
+      });
+      document.querySelectorAll('.star-radio')[val-1].checked = true;
+    });
+  });
+</script>
+
 {% else %}
 <div class="text-center py-5">
   <div style="font-size:5rem;margin-bottom:20px;">❌</div>

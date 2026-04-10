@@ -123,7 +123,39 @@ def product_detail(pid):
     if is_admin():
         return redirect(url_for("admin"))
     product = get_product(pid)
-    return render_template("product_detail.html", product=product, user=current_user(), cart_count=cart_count(), product_image=product_image)
+    reviews = []
+    try:
+        reviews = supabase.table("reviews").select("*").eq("product_id", pid).order("id", desc=True).execute().data or []
+        for r in reviews:
+            r["created_at"] = str(r.get("created_at", ""))[:10]
+    except Exception:
+        pass
+    return render_template("product_detail.html", product=product, reviews=reviews, user=current_user(), cart_count=cart_count(), product_image=product_image)
+
+
+# --- SUBMIT REVIEW ---
+@app.route("/review/<int:pid>", methods=["POST"])
+def submit_review(pid):
+    if not current_user():
+        return redirect(url_for("login"))
+    u = current_user()
+    p = get_product(pid)
+    try:
+        rating = int(request.form.get("rating", 5))
+        comment = request.form.get("comment", "").strip()
+        if comment:
+            supabase.table("reviews").insert({
+                "user_id": u["id"],
+                "product_id": pid,
+                "username": u["username"],
+                "product_name": p["name"] if p else "",
+                "rating": rating,
+                "comment": comment
+            }).execute()
+            flash("Review submitted!", "success")
+    except Exception as e:
+        flash(f"Error submitting review: {e}", "danger")
+    return redirect(url_for("product_detail", pid=pid))
 
 
 # --- SHOP ---
