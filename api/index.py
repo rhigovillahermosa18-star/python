@@ -294,7 +294,8 @@ def checkout():
             flash(f"Order #{order['id']} placed successfully!", "success")
             return redirect(url_for("order_success", oid=order["id"]))
         except Exception as e:
-            app.logger.error("Checkout error: %s", e)
+            import traceback
+            app.logger.error("Checkout error: %s\n%s", e, traceback.format_exc())
             flash(f"Error placing order: {e}", "danger")
     return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
 
@@ -331,7 +332,8 @@ def my_orders():
                 "items": items
             })
     except Exception as e:
-        app.logger.error("my_orders error: %s", e)
+        import traceback
+        app.logger.error("my_orders error: %s\n%s", e, traceback.format_exc())
         flash(f"Error loading orders: {e}", "danger")
     return render_template("my_orders.html", orders=orders, user=u, cart_count=cart_count())
 
