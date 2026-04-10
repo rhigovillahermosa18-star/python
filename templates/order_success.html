@@ -25,9 +25,9 @@
       <span style="color:#fff;text-align:right;max-width:250px">{{order.address}}</span>
     </div>
     <hr style="border-color:rgba(139,92,246,0.3)">
-    {% for item in order.items %}
+    {% for item in order.order_items %}
     <div class="d-flex justify-content-between mb-2" style="color:#aaa;font-size:0.9rem">
-      <span>{{item.product.name}} x{{item.qty}}</span>
+      <span>{{item.product_name}} x{{item.qty}}</span>
       <span>₱{{item.subtotal}}</span>
     </div>
     {% endfor %}

@@ -89,7 +89,7 @@ def build_order(o, items):
         "total": o.get("total", 0),
         "status": o.get("status", "Pending"),
         "created_at": str(o.get("created_at", ""))[:10],
-        "items": items
+        "order_items": items
     }
 
 
@@ -349,7 +349,7 @@ def order_success(oid):
         if res.data:
             raw_items = supabase.table("order_items").select("*").eq("order_id", oid).execute().data or []
             order = build_order(res.data, [
-                {"product": {"name": i["product_name"], "id": i["product_id"]}, "qty": i["qty"], "subtotal": i["subtotal"]}
+                {"product_name": i["product_name"], "qty": i["qty"], "subtotal": i["subtotal"]}
                 for i in raw_items
             ])
     except Exception as e:
