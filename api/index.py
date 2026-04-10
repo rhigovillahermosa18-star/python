@@ -466,25 +466,6 @@ def update_order(oid, status):
     return redirect(url_for("admin"))
 
 
-# --- DEBUG (remove after fixing) ---
-@app.route("/debug/test-db")
-def debug_test_db():
-    results = {}
-    try:
-        results["orders_select"] = str(supabase.table("orders").select("id").limit(1).execute())
-    except Exception as e:
-        results["orders_select"] = f"ERROR: {e}"
-    try:
-        results["order_items_select"] = str(supabase.table("order_items").select("id").limit(1).execute())
-    except Exception as e:
-        results["order_items_select"] = f"ERROR: {e}"
-    try:
-        results["orders_columns"] = str(supabase.table("orders").select("*").limit(1).execute())
-    except Exception as e:
-        results["orders_columns"] = f"ERROR: {e}"
-    return "<pre>" + "\n\n".join(f"{k}:\n{v}" for k, v in results.items()) + "</pre>"
-
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1")
