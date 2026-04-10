@@ -331,7 +331,7 @@ def my_orders():
                 "total": o.get("total", 0),
                 "status": o.get("status", "Pending"),
                 "created_at": str(o.get("created_at", ""))[:10],
-                "items": items
+                "order_items": items
             })
     except Exception as e:
         import traceback
