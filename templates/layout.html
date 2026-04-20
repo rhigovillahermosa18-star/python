@@ -112,7 +112,7 @@ footer{background:rgba(15,15,26,0.98);border-top:1px solid rgba(139,92,246,0.25)
 {% block content %}{% endblock %}
 </div>
 
-<footer>
+<footer {% if user and user.role == 'admin' %}style="display:none"{% endif %}>
   <div class="container py-5">
     <div class="row g-4">
 
