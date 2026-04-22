@@ -397,7 +397,25 @@ def admin():
     products = supabase.table("products").select("*").execute().data or []
     orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
     users = supabase.table("users").select("*").execute().data or []
-    return render_template("admin.html", products=products, orders=orders, users=users, user=current_user(), cart_count=cart_count(), product_image=product_image)
+
+    # Sales by date
+    sales_by_date = {}
+    for o in orders:
+        date = str(o.get("created_at", ""))[:10]
+        sales_by_date[date] = sales_by_date.get(date, 0) + float(o.get("total", 0))
+    sales_dates = sorted(sales_by_date.keys())
+    sales_totals = [sales_by_date[d] for d in sales_dates]
+
+    # Sales by status
+    status_counts = {"Pending": 0, "Shipped": 0, "Delivered": 0}
+    for o in orders:
+        s = o.get("status", "Pending")
+        if s in status_counts:
+            status_counts[s] += 1
+
+    return render_template("admin.html", products=products, orders=orders, users=users,
+        user=current_user(), cart_count=cart_count(), product_image=product_image,
+        sales_dates=sales_dates, sales_totals=sales_totals, status_counts=status_counts)
 
 
 # --- ADMIN ADD PRODUCT ---
