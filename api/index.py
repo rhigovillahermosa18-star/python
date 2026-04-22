@@ -72,7 +72,9 @@ def save_image(file):
     try:
         file_bytes = file.read()
         supabase.storage.from_("product-images").upload(
-            filename, file_bytes, {"content-type": file.content_type or "image/jpeg"}
+            path=filename,
+            file=file_bytes,
+            file_options={"content-type": file.content_type or "image/jpeg", "upsert": "true"}
         )
         res = supabase.storage.from_("product-images").get_public_url(filename)
         return res
@@ -447,6 +449,8 @@ def admin_add():
             flash("Invalid numeric values provided.", "danger")
             return render_template("admin_form.html", item=None, user=current_user(), cart_count=cart_count())
         image_filename = save_image(request.files.get("image"))
+        if request.files.get("image") and request.files["image"].filename and not image_filename:
+            flash("Image upload failed — product saved without image.", "warning")
         supabase.table("products").insert({
             "name": request.form["name"],
             "flavor": request.form["flavor"],
@@ -483,6 +487,8 @@ def admin_edit(pid):
             return render_template("admin_form.html", item=p, user=current_user(), cart_count=cart_count())
         image_filename = p.get("image", "")
         new_file = save_image(request.files.get("image"))
+        if request.files.get("image") and request.files["image"].filename and not new_file:
+            flash("Image upload failed — product saved without new image.", "warning")
         if new_file:
             delete_image(image_filename)
             image_filename = new_file
