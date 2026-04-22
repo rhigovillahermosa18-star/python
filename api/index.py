@@ -7,6 +7,8 @@ from werkzeug.utils import secure_filename, safe_join
 from werkzeug.exceptions import NotFound
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
 from supabase import create_client, Client
+import cloudinary
+import cloudinary.uploader
 
 load_dotenv()
 
@@ -24,6 +26,12 @@ app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 supabase: Client = create_client(
     os.environ.get("SUPABASE_URL"),
     os.environ.get("SUPABASE_KEY"),
+)
+
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
 )
 
 VAPE_IMGS = ["vape1.jpg", "vape2.jpg", "vape3.jpg", "vape4.jpg", "vape5.jpg", "vape6.jpg"]
@@ -62,34 +70,28 @@ def product_image(p):
     return "/static/images/" + VAPE_IMGS[idx]
 
 def save_image(file):
-    """Uploads image to Supabase Storage, returns public URL or empty string."""
+    """Uploads image to Cloudinary, returns secure URL or empty string."""
     if not file or not file.filename:
         return ""
     ext = os.path.splitext(secure_filename(file.filename))[1].lower()
     if ext not in ALLOWED_EXTS:
         return ""
-    filename = uuid.uuid4().hex + ext
     try:
-        file_bytes = file.read()
-        supabase.storage.from_("product-images").upload(
-            path=filename,
-            file=file_bytes,
-            file_options={"content-type": file.content_type or "image/jpeg", "upsert": "true"}
-        )
-        res = supabase.storage.from_("product-images").get_public_url(filename)
-        return res
+        res = cloudinary.uploader.upload(file, folder="cloudvape")
+        return res.get("secure_url", "")
     except Exception as e:
         app.logger.error("save_image error: %s", e)
         return ""
 
 def delete_image(filename):
-    """Deletes image from Supabase Storage."""
-    if not filename:
+    """Deletes image from Cloudinary."""
+    if not filename or not filename.startswith("http"):
         return
     try:
-        # Extract just the filename if it's a full URL
-        name = filename.split("/")[-1]
-        supabase.storage.from_("product-images").remove([name])
+        # Extract public_id from URL
+        parts = filename.split("/")
+        public_id = "cloudvape/" + parts[-1].rsplit(".", 1)[0]
+        cloudinary.uploader.destroy(public_id)
     except Exception as e:
         app.logger.error("delete_image error: %s", e)
 
