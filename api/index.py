@@ -55,29 +55,41 @@ def cart_count():
 def product_image(p):
     img = p.get("image", "")
     if img:
+        if img.startswith("http"):
+            return img
         return "/static/images/" + os.path.basename(img)
     idx = (int(p.get("id", 1)) - 1) % len(VAPE_IMGS)
     return "/static/images/" + VAPE_IMGS[idx]
 
 def save_image(file):
-    """Saves uploaded image safely, returns filename or empty string."""
+    """Uploads image to Supabase Storage, returns public URL or empty string."""
     if not file or not file.filename:
         return ""
     ext = os.path.splitext(secure_filename(file.filename))[1].lower()
     if ext not in ALLOWED_EXTS:
         return ""
     filename = uuid.uuid4().hex + ext
-    file.save(os.path.join(IMAGES_DIR, filename))
-    return filename
+    try:
+        file_bytes = file.read()
+        supabase.storage.from_("product-images").upload(
+            filename, file_bytes, {"content-type": file.content_type or "image/jpeg"}
+        )
+        res = supabase.storage.from_("product-images").get_public_url(filename)
+        return res
+    except Exception as e:
+        app.logger.error("save_image error: %s", e)
+        return ""
 
 def delete_image(filename):
-    """Safely deletes an image file."""
+    """Deletes image from Supabase Storage."""
     if not filename:
         return
-    safe = os.path.basename(filename)
-    path = os.path.join(IMAGES_DIR, safe)
-    if os.path.exists(path):
-        os.remove(path)
+    try:
+        # Extract just the filename if it's a full URL
+        name = filename.split("/")[-1]
+        supabase.storage.from_("product-images").remove([name])
+    except Exception as e:
+        app.logger.error("delete_image error: %s", e)
 
 def build_order(o, items):
     """Build a plain dict from a Supabase order row."""
