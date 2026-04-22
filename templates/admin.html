@@ -6,139 +6,150 @@
 .table-dark-custom tbody tr td { color: #e0e0e0; vertical-align: middle; }
 .table-dark-custom thead th { color: #fff; font-weight: 600; border: none; padding: 14px 16px; }
 .table-dark-custom tbody tr td { padding: 12px 16px; border: none; }
+.admin-sidebar { width: 220px; min-width: 220px; position: sticky; top: 80px; height: fit-content; }
+.sidebar-link { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 10px; color: #aaa; text-decoration: none; font-weight: 600; border: 1px solid transparent; transition: all 0.2s; margin-bottom: 6px; }
+.sidebar-link:hover, .sidebar-link.active { background: rgba(139,92,246,0.15); color: #a78bfa; border-color: rgba(139,92,246,0.3); }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="section-title mb-0"><i class="fas fa-cog"></i> Admin Panel</h2>
-  <a href="/admin/add" class="btn btn-purple"><i class="fas fa-plus"></i> Add Product</a>
+<div class="d-flex gap-4 align-items-start">
+
+  <!-- SIDEBAR -->
+  <div class="admin-sidebar">
+    <div class="card-dark p-3">
+      <p style="color:#555;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Menu</p>
+      <a href="#" class="sidebar-link active" onclick="showTab('products',this)"><i class="fas fa-box" style="color:#8b5cf6"></i> Products</a>
+      <a href="#" class="sidebar-link" onclick="showTab('ordersTab',this)"><i class="fas fa-shopping-bag" style="color:#ec4899"></i> Orders</a>
+      <a href="#" class="sidebar-link" onclick="showTab('usersTab',this)"><i class="fas fa-users" style="color:#38ef7d"></i> Users</a>
+      <hr style="border-color:rgba(139,92,246,0.2);margin:12px 0">
+      <a href="/admin/add" class="btn btn-purple w-100"><i class="fas fa-plus"></i> Add Product</a>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div style="flex:1;min-width:0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="section-title mb-0"><i class="fas fa-cog"></i> Admin Panel</h2>
+    </div>
+
+    <!-- STATS -->
+    <div class="row g-3 mb-4">
+      {% for icon, label, val, color in [
+        ("fa-box","Products", products|length, "#8b5cf6"),
+        ("fa-shopping-bag","Orders", orders|length, "#ec4899"),
+        ("fa-users","Users", users|length, "#38ef7d"),
+        ("fa-peso-sign","Revenue", orders|sum(attribute="total"), "#f59e0b")
+      ] %}
+      <div class="col-md-3 col-6">
+        <div class="card-dark p-4 text-center">
+          <i class="fas {{icon}} fa-2x mb-2" style="color:{{color}}"></i>
+          <h4 style="color:#fff;font-weight:800">{% if loop.last %}₱{{val}}{% else %}{{val}}{% endif %}</h4>
+          <small style="color:#aaa">{{label}}</small>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- TAB CONTENT -->
+    <div class="tab-content">
+
+      <!-- PRODUCTS TAB -->
+      <div id="products">
+        <div class="table-responsive table-dark-custom">
+          <table class="table table-borderless mb-0">
+            <thead>
+              <tr><th>Image</th><th>Product</th><th>Flavor</th><th>Nicotine</th><th>Size</th><th>Price</th><th>Stock</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for p in products %}
+            <tr>
+              <td><img src="{{ product_image(p) }}" style="width:45px;height:45px;object-fit:cover;border-radius:8px;"></td>
+              <td><strong style="color:#fff;">{{p.name}}</strong></td>
+              <td><span style="color:#ccc;">{{p.flavor}}</span></td>
+              <td><span class="badge-nic">{{p.nicotine}}mg</span></td>
+              <td><span style="color:#ccc;">{{p.size}}ml</span></td>
+              <td><strong style="color:#8b5cf6;">₱{{p.price}}</strong></td>
+              <td><strong style="color:{% if p.stock < 5 %}#f87171{% else %}#38ef7d{% endif %};">{{p.stock}}</strong></td>
+              <td>
+                <a href="/admin/edit/{{p.id}}" class="btn btn-sm btn-outline-purple me-1"><i class="fas fa-edit"></i></a>
+                <a href="/admin/delete/{{p.id}}" class="btn btn-sm" style="background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3);border-radius:8px" onclick="return confirm('Delete this product?')"><i class="fas fa-trash"></i></a>
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ORDERS TAB -->
+      <div id="ordersTab" style="display:none">
+        {% if orders %}
+        <div class="table-responsive table-dark-custom">
+          <table class="table table-borderless mb-0">
+            <thead>
+              <tr><th>#</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for o in orders %}
+            <tr>
+              <td><strong style="color:#8b5cf6;">#{{o.id}}</strong></td>
+              <td><span style="color:#fff;">{{o.name}}</span></td>
+              <td><span style="color:#ccc;">{{o.phone}}</span></td>
+              <td><strong style="color:#8b5cf6;">₱{{o.total}}</strong></td>
+              <td>
+                <span style="background:{% if o.status=='Pending' %}rgba(245,158,11,0.15){% elif o.status=='Shipped' %}rgba(139,92,246,0.15){% else %}rgba(56,239,125,0.15){% endif %};color:{% if o.status=='Pending' %}#f59e0b{% elif o.status=='Shipped' %}#a78bfa{% else %}#38ef7d{% endif %};border:1px solid {% if o.status=='Pending' %}rgba(245,158,11,0.3){% elif o.status=='Shipped' %}rgba(139,92,246,0.3){% else %}rgba(56,239,125,0.3){% endif %};border-radius:20px;padding:3px 12px;font-size:0.8rem;white-space:nowrap;">{{o.status}}</span>
+              </td>
+              <td>
+                <div class="d-flex gap-1 flex-wrap">
+                  <a href="/admin/order/{{o.id}}/Pending" class="btn btn-sm" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:0.75rem">Pending</a>
+                  <a href="/admin/order/{{o.id}}/Shipped" class="btn btn-sm" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);border-radius:8px;font-size:0.75rem">Shipped</a>
+                  <a href="/admin/order/{{o.id}}/Delivered" class="btn btn-sm" style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:8px;font-size:0.75rem">Delivered</a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5"><i class="fas fa-inbox fa-3x mb-3" style="color:#555"></i><p style="color:#888">No orders yet.</p></div>
+        {% endif %}
+      </div>
+
+      <!-- USERS TAB -->
+      <div id="usersTab" style="display:none">
+        <div class="table-responsive table-dark-custom">
+          <table class="table table-borderless mb-0">
+            <thead>
+              <tr><th>#</th><th>Username</th><th>Email</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+            {% for u in users %}
+            <tr>
+              <td><span style="color:#888;">{{u.id}}</span></td>
+              <td><strong style="color:#fff;">{{u.username}}</strong></td>
+              <td><span style="color:#ccc;">{{u.email}}</span></td>
+              <td>
+                <span style="background:{% if u.role=='admin' %}rgba(236,72,153,0.15){% else %}rgba(139,92,246,0.15){% endif %};color:{% if u.role=='admin' %}#f472b6{% else %}#a78bfa{% endif %};border:1px solid {% if u.role=='admin' %}rgba(236,72,153,0.3){% else %}rgba(139,92,246,0.3){% endif %};border-radius:20px;padding:3px 12px;font-size:0.8rem;">{{u.role}}</span>
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
-<!-- STATS -->
-<div class="row g-3 mb-4">
-  {% for icon, label, val, color in [
-    ("fa-box","Products", products|length, "#8b5cf6"),
-    ("fa-shopping-bag","Orders", orders|length, "#ec4899"),
-    ("fa-users","Users", users|length, "#38ef7d"),
-    ("fa-peso-sign","Revenue", orders|sum(attribute="total"), "#f59e0b")
-  ] %}
-  <div class="col-md-3 col-6">
-    <div class="card-dark p-4 text-center">
-      <i class="fas {{icon}} fa-2x mb-2" style="color:{{color}}"></i>
-      <h4 style="color:#fff;font-weight:800">{% if loop.last %}₱{{val}}{% else %}{{val}}{% endif %}</h4>
-      <small style="color:#aaa">{{label}}</small>
-    </div>
-  </div>
-  {% endfor %}
-</div>
+<script>
+function showTab(id, el) {
+  document.querySelectorAll('.tab-content > div').forEach(d => d.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+}
+</script>
 
-<!-- TABS -->
-<ul class="nav nav-pills mb-4 gap-2" id="adminTabs">
-  <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#products" style="background:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3)"><i class="fas fa-box"></i> Products</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#ordersTab" style="background:rgba(255,255,255,0.05);color:#aaa;border:1px solid rgba(255,255,255,0.1)"><i class="fas fa-shopping-bag"></i> Orders</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#usersTab" style="background:rgba(255,255,255,0.05);color:#aaa;border:1px solid rgba(255,255,255,0.1)"><i class="fas fa-users"></i> Users</a></li>
-</ul>
-
-<div class="tab-content">
-
-  <!-- PRODUCTS TAB -->
-  <div class="tab-pane fade show active" id="products">
-    <div class="table-responsive table-dark-custom">
-      <table class="table table-borderless mb-0">
-        <thead>
-          <tr>
-            <th>Image</th><th>Product</th><th>Flavor</th><th>Nicotine</th><th>Size</th><th>Price</th><th>Stock</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for p in products %}
-        <tr>
-          <td><img src="{{ product_image(p) }}" style="width:45px;height:45px;object-fit:cover;border-radius:8px;"></td>
-          <td><strong style="color:#fff;">{{p.name}}</strong></td>
-          <td><span style="color:#ccc;">{{p.flavor}}</span></td>
-          <td><span class="badge-nic">{{p.nicotine}}mg</span></td>
-          <td><span style="color:#ccc;">{{p.size}}ml</span></td>
-          <td><strong style="color:#8b5cf6;">₱{{p.price}}</strong></td>
-          <td><strong style="color:{% if p.stock < 5 %}#f87171{% else %}#38ef7d{% endif %};">{{p.stock}}</strong></td>
-          <td>
-            <a href="/admin/edit/{{p.id}}" class="btn btn-sm btn-outline-purple me-1"><i class="fas fa-edit"></i></a>
-            <a href="/admin/delete/{{p.id}}" class="btn btn-sm" style="background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3);border-radius:8px" onclick="return confirm('Delete this product?')"><i class="fas fa-trash"></i></a>
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ORDERS TAB -->
-  <div class="tab-pane fade" id="ordersTab">
-    {% if orders %}
-    <div class="table-responsive table-dark-custom">
-      <table class="table table-borderless mb-0">
-        <thead>
-          <tr><th>#</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-        {% for o in orders %}
-        <tr>
-          <td><strong style="color:#8b5cf6;">#{{o.id}}</strong></td>
-          <td><span style="color:#fff;">{{o.name}}</span></td>
-          <td><span style="color:#ccc;">{{o.phone}}</span></td>
-          <td><strong style="color:#8b5cf6;">₱{{o.total}}</strong></td>
-          <td>
-            <span style="
-              background:{% if o.status=='Pending' %}rgba(245,158,11,0.15){% elif o.status=='Shipped' %}rgba(139,92,246,0.15){% else %}rgba(56,239,125,0.15){% endif %};
-              color:{% if o.status=='Pending' %}#f59e0b{% elif o.status=='Shipped' %}#a78bfa{% else %}#38ef7d{% endif %};
-              border:1px solid {% if o.status=='Pending' %}rgba(245,158,11,0.3){% elif o.status=='Shipped' %}rgba(139,92,246,0.3){% else %}rgba(56,239,125,0.3){% endif %};
-              border-radius:20px;padding:3px 12px;font-size:0.8rem;white-space:nowrap;">
-              {{o.status}}
-            </span>
-          </td>
-          <td>
-            <div class="d-flex gap-1 flex-wrap">
-              <a href="/admin/order/{{o.id}}/Pending" class="btn btn-sm" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:0.75rem">Pending</a>
-              <a href="/admin/order/{{o.id}}/Shipped" class="btn btn-sm" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);border-radius:8px;font-size:0.75rem">Shipped</a>
-              <a href="/admin/order/{{o.id}}/Delivered" class="btn btn-sm" style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:8px;font-size:0.75rem">Delivered</a>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="text-center py-5"><i class="fas fa-inbox fa-3x mb-3" style="color:#555"></i><p style="color:#888">No orders yet.</p></div>
-    {% endif %}
-  </div>
-
-  <!-- USERS TAB -->
-  <div class="tab-pane fade" id="usersTab">
-    <div class="table-responsive table-dark-custom">
-      <table class="table table-borderless mb-0">
-        <thead>
-          <tr><th>#</th><th>Username</th><th>Email</th><th>Role</th></tr>
-        </thead>
-        <tbody>
-        {% for u in users %}
-        <tr>
-          <td><span style="color:#888;">{{u.id}}</span></td>
-          <td><strong style="color:#fff;">{{u.username}}</strong></td>
-          <td><span style="color:#ccc;">{{u.email}}</span></td>
-          <td>
-            <span style="
-              background:{% if u.role=='admin' %}rgba(236,72,153,0.15){% else %}rgba(139,92,246,0.15){% endif %};
-              color:{% if u.role=='admin' %}#f472b6{% else %}#a78bfa{% endif %};
-              border:1px solid {% if u.role=='admin' %}rgba(236,72,153,0.3){% else %}rgba(139,92,246,0.3){% endif %};
-              border-radius:20px;padding:3px 12px;font-size:0.8rem;">
-              {{u.role}}
-            </span>
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-</div>
 {% endblock %}
