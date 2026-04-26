@@ -269,7 +269,7 @@ def register():
             flash("Username or email already taken.", "danger")
         else:
             code = str(random.randint(100000, 999999))
-            session["pending_user"] = {"username": username, "email": email, "password": password}
+            session["pending_user"] = {"username": username, "email": email, "password": password, "phone": request.form.get("phone", "").strip()}
             session["verify_code"] = code
             try:
                 msg = Message("Your Verification Code - CloudVape", recipients=[email])
@@ -318,6 +318,7 @@ def verify_email():
                 "username": u["username"],
                 "email": u["email"],
                 "password": u["password"],
+                "phone": u.get("phone", ""),
                 "role": "customer"
             }).execute()
             flash("Email verified! You can now login.", "success")
@@ -422,6 +423,17 @@ def checkout():
     cart = session.get("cart", {})
     if not cart:
         return redirect(url_for("cart"))
+    u = current_user()
+    # Auto-fill from last order if user has no saved phone/address
+    if not u.get("phone") and not u.get("address"):
+        try:
+            last = supabase.table("orders").select("name,phone,address").eq("user_id", u["id"]).order("id", desc=True).limit(1).execute().data
+            if last:
+                u["phone"] = u.get("phone") or last[0].get("phone", "")
+                u["address"] = u.get("address") or last[0].get("address", "")
+                u["name"] = u.get("name") or last[0].get("name", "")
+        except Exception:
+            pass
     items = []
     for pid, v in cart.items():
         p = get_product(int(pid))
@@ -465,7 +477,7 @@ def checkout():
             import traceback
             app.logger.error("Checkout error: %s\n%s", e, traceback.format_exc())
             flash(f"Error placing order: {e}", "danger")
-    return render_template("checkout.html", items=items, total=total, user=current_user(), cart_count=cart_count(), product_image=product_image)
+    return render_template("checkout.html", items=items, total=total, user=u, cart_count=cart_count(), product_image=product_image)
 
 
 # --- MY ORDERS ---

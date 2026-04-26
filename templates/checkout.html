@@ -10,15 +10,15 @@
       <form method="POST">
         <div class="mb-3">
           <label style="color:#aaa;font-size:0.9rem">Full Name</label>
-          <input type="text" name="name" class="form-control" placeholder="Enter your full name" required>
+          <input type="text" name="name" class="form-control" placeholder="Enter your full name" value="{{user.name if user.name else user.username}}" required>
         </div>
         <div class="mb-3">
           <label style="color:#aaa;font-size:0.9rem">Phone Number</label>
-          <input type="text" name="phone" class="form-control" placeholder="e.g. 09XX-XXX-XXXX" required>
+          <input type="text" name="phone" class="form-control" placeholder="e.g. 09XX-XXX-XXXX" value="{{user.phone or ''}}" required>
         </div>
         <div class="mb-4">
           <label style="color:#aaa;font-size:0.9rem">Delivery Address</label>
-          <textarea name="address" class="form-control" rows="3" placeholder="Street, Barangay, City, Province" required></textarea>
+          <textarea name="address" class="form-control" rows="3" placeholder="Street, Barangay, City, Province" required>{{user.address or ''}}</textarea>
         </div>
         <div class="card-dark p-3 mb-4" style="border-color:rgba(236,72,153,0.3)">
           <p style="color:#aaa;font-size:0.85rem;margin:0"><i class="fas fa-info-circle" style="color:#ec4899"></i> Payment method: <strong style="color:#fff">Cash on Delivery</strong></p>
