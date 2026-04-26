@@ -113,7 +113,7 @@
               <td>
                 {% if o.payment == 'gcash' %}
                 <span style="background:rgba(0,123,255,0.15);color:#60a5fa;border:1px solid rgba(0,123,255,0.3);border-radius:20px;padding:3px 10px;font-size:0.8rem"><i class="fas fa-mobile-alt"></i> GCash</span>
-                {% if o.gcash_ref %}<div style="color:#888;font-size:0.78rem;margin-top:4px">Ref: {{o.gcash_ref}}</div>{% endif %}
+                {% if o.gcash_ref %}<div style="margin-top:6px"><a href="{{o.gcash_ref}}" target="_blank"><img src="{{o.gcash_ref}}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid rgba(0,123,255,0.3)" title="View Receipt"></a></div>{% endif %}
                 {% else %}
                 <span style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:20px;padding:3px 10px;font-size:0.8rem"><i class="fas fa-money-bill-wave"></i> COD</span>
                 {% endif %}

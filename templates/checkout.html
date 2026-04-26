@@ -7,7 +7,7 @@
   <div class="col-lg-7">
     <div class="card-dark p-4">
       <h5 style="color:#fff;font-weight:700;margin-bottom:20px"><i class="fas fa-map-marker-alt"></i> Delivery Details</h5>
-      <form method="POST">
+      <form method="POST" enctype="multipart/form-data">
         <div class="mb-3">
           <label style="color:#aaa;font-size:0.9rem">Full Name</label>
           <input type="text" name="name" class="form-control" placeholder="Enter your full name" value="{{user.name if user.name else user.username}}" required>
@@ -39,8 +39,9 @@
 
         <!-- GCASH REF (no QR here) -->
         <div id="gcash-ref-box" style="display:none" class="mb-4">
-          <label style="color:#aaa;font-size:0.9rem">GCash Reference Number</label>
-          <input type="text" name="gcash_ref" class="form-control" placeholder="e.g. 1234567890">
+          <label style="color:#aaa;font-size:0.9rem">Upload GCash Receipt</label>
+          <input type="file" name="gcash_receipt" accept="image/*" class="form-control">
+          <small style="color:#666">Upload a screenshot of your GCash payment receipt.</small>
         </div>
 
         <button class="btn btn-purple w-100 btn-lg"><i class="fas fa-check-circle"></i> Place Order</button>

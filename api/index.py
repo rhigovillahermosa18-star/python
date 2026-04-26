@@ -452,8 +452,12 @@ def checkout():
                 "total": float(total),
                 "status": "Pending",
                 "payment": request.form.get("payment", "cod"),
-                "gcash_ref": request.form.get("gcash_ref", "")
+                "gcash_ref": ""
             }
+            if request.form.get("payment") == "gcash":
+                receipt_file = request.files.get("gcash_receipt")
+                receipt_url = save_image(receipt_file) if receipt_file and receipt_file.filename else ""
+                order_payload["gcash_ref"] = receipt_url
             if "username" in u:
                 order_payload["username"] = u["username"]
             order_res = supabase.table("orders").insert(order_payload).execute()
