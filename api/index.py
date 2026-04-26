@@ -105,7 +105,67 @@ def delete_image(filename):
     except Exception as e:
         app.logger.error("delete_image error: %s", e)
 
-def build_order(o, items):
+def send_order_email(order, status):
+    """Send shipped or delivered email to customer."""
+    try:
+        user = supabase.table("users").select("email,username").eq("id", order["user_id"]).single().execute().data
+        if not user or not user.get("email"):
+            return
+        email = user["email"]
+        name = order.get("name") or user["username"]
+        oid = order["id"]
+        total = order["total"]
+        address = order.get("address", "")
+
+        if status == "Shipped":
+            subject = f"Your Order Has Been Shipped! 🚚 - CloudVape"
+            status_color = "#8b5cf6"
+            icon = "🚚"
+            heading = "Your Order is On Its Way!"
+            body = f"Great news! Your order <strong>#{ oid }</strong> has been shipped and is on its way to your delivery address."
+            extra = f"<p style='color:#aaa;font-size:0.9rem'>📍 Delivery Address: <strong style='color:#fff'>{address}</strong></p>"
+        else:
+            subject = f"Your Order Has Been Delivered! ✅ - CloudVape"
+            status_color = "#38ef7d"
+            icon = "✅"
+            heading = "Your Order Has Been Delivered!"
+            body = f"Your order <strong>#{oid}</strong> has been successfully delivered. We hope you enjoy your purchase!"
+            extra = "<p style='color:#aaa;font-size:0.9rem'>If you have any issues with your order, please contact us immediately.</p>"
+
+        msg = Message(subject, recipients=[email])
+        msg.html = f"""
+        <div style="font-family:Segoe UI,sans-serif;max-width:520px;margin:auto;background:#0f0f1a;color:#e0e0e0;border-radius:16px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#8b5cf6,#ec4899);padding:30px;text-align:center">
+            <h1 style="color:#fff;margin:0;font-size:1.8rem">&#9729; CloudVape</h1>
+          </div>
+          <div style="padding:40px">
+            <div style="text-align:center;font-size:3rem;margin-bottom:16px">{icon}</div>
+            <h2 style="color:#fff;text-align:center;margin-bottom:8px">{heading}</h2>
+            <p>Hi <strong>{name}</strong>,</p>
+            <p style="color:#aaa">{body}</p>
+            <div style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:12px;padding:20px;margin:24px 0">
+              <table style="width:100%;color:#aaa;font-size:0.9rem">
+                <tr><td>Order Number</td><td style="text-align:right;color:#8b5cf6;font-weight:700">#{oid}</td></tr>
+                <tr><td>Total Amount</td><td style="text-align:right;color:#fff;font-weight:700">&#8369;{total}</td></tr>
+                <tr><td>Status</td><td style="text-align:right"><span style="background:rgba(139,92,246,0.2);color:{status_color};border-radius:20px;padding:2px 12px;font-size:0.85rem">{status}</span></td></tr>
+              </table>
+            </div>
+            {extra}
+            <hr style="border-color:rgba(139,92,246,0.2);margin:24px 0">
+            <p style="color:#666;font-size:0.85rem">&#9888;&#65039; Reminder: Our products are for <strong>adults 21+</strong> only. Please ensure someone of legal age received the package.</p>
+            <hr style="border-color:rgba(139,92,246,0.2);margin:24px 0">
+            <p style="color:#666;font-size:0.8rem">Need help? Contact us at <a href="mailto:support@cloudvape.ph" style="color:#8b5cf6">support@cloudvape.ph</a></p>
+            <p style="color:#555;font-size:0.75rem;text-align:center;margin-top:16px">&copy; 2024 CloudVape. All rights reserved.</p>
+          </div>
+        </div>
+        """
+        mail.send(msg)
+        app.logger.info("Order email sent to %s for order #%s (%s)", email, oid, status)
+    except Exception as e:
+        app.logger.error("send_order_email error: %s", e)
+
+
+
     """Build a plain dict from a Supabase order row."""
     return {
         "id": o["id"],
@@ -590,6 +650,10 @@ def update_order(oid, status):
         flash("Invalid order status.", "danger")
         return redirect(url_for("admin"))
     supabase.table("orders").update({"status": status}).eq("id", oid).execute()
+    if status in ("Shipped", "Delivered"):
+        order = supabase.table("orders").select("*").eq("id", oid).single().execute().data
+        if order:
+            send_order_email(order, status)
     flash(f"Order #{oid} marked as {status}.", "success")
     return redirect(url_for("admin"))
 
