@@ -37,12 +37,10 @@
           <input type="hidden" name="payment" id="payment-input" value="cod">
         </div>
 
-        <!-- GCASH QR -->
-        <div id="gcash-qr" style="display:none" class="card-dark p-4 mb-4 text-center">
-          <p style="color:#aaa;font-size:0.9rem;margin-bottom:12px"><i class="fas fa-mobile-alt" style="color:#007bff"></i> Scan the QR code to pay via <strong style="color:#fff">GCash</strong></p>
-          <img src="/static/images/qrcode.jpg" style="width:100%;height:auto;border-radius:12px;border:2px solid rgba(0,123,255,0.3);display:block" alt="GCash QR Code">
-          <p style="color:#aaa;font-size:0.85rem;margin-top:12px">After payment, enter your <strong style="color:#fff">GCash reference number</strong> below:</p>
-          <input type="text" name="gcash_ref" class="form-control mt-2 text-center" placeholder="e.g. 1234567890">
+        <!-- GCASH REF (no QR here) -->
+        <div id="gcash-ref-box" style="display:none" class="mb-4">
+          <label style="color:#aaa;font-size:0.9rem">GCash Reference Number</label>
+          <input type="text" name="gcash_ref" class="form-control" placeholder="e.g. 1234567890">
         </div>
 
         <button class="btn btn-purple w-100 btn-lg"><i class="fas fa-check-circle"></i> Place Order</button>
@@ -73,6 +71,13 @@
         <span style="color:#fff;font-weight:700;font-size:1.1rem">Total</span>
         <span style="color:#8b5cf6;font-weight:800;font-size:1.4rem">₱{{total}}</span>
       </div>
+
+      <!-- GCASH QR -->
+      <div id="gcash-qr" style="display:none;margin-top:20px" class="text-center">
+        <hr style="border-color:rgba(0,123,255,0.3)">
+        <p style="color:#aaa;font-size:0.9rem;margin-bottom:12px"><i class="fas fa-mobile-alt" style="color:#007bff"></i> Scan to pay via <strong style="color:#fff">GCash</strong></p>
+        <img src="/static/images/qrcode.jpg" style="width:100%;height:auto;border-radius:12px;border:2px solid rgba(0,123,255,0.3);display:block" alt="GCash QR Code">
+      </div>
     </div>
   </div>
 </div>
@@ -86,12 +91,14 @@ function selectPayment(method) {
     document.getElementById('cod-box').style.border = '2px solid rgba(255,255,255,0.1)';
     document.getElementById('cod-box').style.background = 'rgba(255,255,255,0.03)';
     document.getElementById('gcash-qr').style.display = 'block';
+    document.getElementById('gcash-ref-box').style.display = 'block';
   } else {
     document.getElementById('cod-box').style.border = '2px solid #8b5cf6';
     document.getElementById('cod-box').style.background = 'rgba(139,92,246,0.15)';
     document.getElementById('gcash-box').style.border = '2px solid rgba(255,255,255,0.1)';
     document.getElementById('gcash-box').style.background = 'rgba(255,255,255,0.03)';
     document.getElementById('gcash-qr').style.display = 'none';
+    document.getElementById('gcash-ref-box').style.display = 'none';
   }
 }
 </script>
