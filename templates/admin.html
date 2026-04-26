@@ -91,47 +91,64 @@
         {% if orders %}
         <div class="input-group mb-3">
           <span class="input-group-text" style="background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.3);color:#8b5cf6;border-right:none"><i class="fas fa-search"></i></span>
-          <input type="text" id="orderSearch" class="form-control" placeholder="Search orders..." style="border-left:none" oninput="filterTable('orderSearch','ordersBody')">
+          <input type="text" id="orderSearch" class="form-control" placeholder="Search orders..." style="border-left:none" oninput="filterOrders()">
         </div>
-        <div class="table-responsive table-dark-custom">
-          <table class="table table-borderless mb-0">
-            <thead>
-              <tr><th>#</th><th>Customer</th><th>Products</th><th>Phone</th><th>Payment</th><th>Total</th><th>Status</th><th>Actions</th></tr>
-            </thead>
-            <tbody id="ordersBody">
-            {% for o in orders %}
-            <tr>
-              <td><strong style="color:#8b5cf6;">#{{o.id}}</strong></td>
-              <td><span style="color:#fff;">{{o.name}}</span></td>
-              <td>
-                {% for item in o.order_items %}
-                <div style="color:#ccc;font-size:0.85rem">{{item.product_name}} <span style="color:#888">x{{item.qty}}</span></div>
-                {% endfor %}
-              </td>
-              <td><span style="color:#ccc;">{{o.phone}}</span></td>
-              <td><strong style="color:#8b5cf6;">₱{{o.total}}</strong></td>
-              <td>
-                {% if o.payment == 'gcash' %}
-                <span style="background:rgba(0,123,255,0.15);color:#60a5fa;border:1px solid rgba(0,123,255,0.3);border-radius:20px;padding:3px 10px;font-size:0.8rem"><i class="fas fa-mobile-alt"></i> GCash</span>
-                {% if o.gcash_ref %}<div style="margin-top:6px"><a href="{{o.gcash_ref}}" target="_blank"><img src="{{o.gcash_ref}}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid rgba(0,123,255,0.3)" title="View Receipt"></a></div>{% endif %}
-                {% else %}
-                <span style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:20px;padding:3px 10px;font-size:0.8rem"><i class="fas fa-money-bill-wave"></i> COD</span>
-                {% endif %}
-              </td>
-              <td>
-                <span style="background:{% if o.status=='Pending' %}rgba(245,158,11,0.15){% elif o.status=='Shipped' %}rgba(139,92,246,0.15){% else %}rgba(56,239,125,0.15){% endif %};color:{% if o.status=='Pending' %}#f59e0b{% elif o.status=='Shipped' %}#a78bfa{% else %}#38ef7d{% endif %};border:1px solid {% if o.status=='Pending' %}rgba(245,158,11,0.3){% elif o.status=='Shipped' %}rgba(139,92,246,0.3){% else %}rgba(56,239,125,0.3){% endif %};border-radius:20px;padding:3px 12px;font-size:0.8rem;white-space:nowrap;">{{o.status}}</span>
-              </td>
-              <td>
-                <div class="d-flex gap-1 flex-wrap">
-                  <a href="/admin/order/{{o.id}}/Pending" class="btn btn-sm" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:0.75rem">Pending</a>
-                  <a href="/admin/order/{{o.id}}/Shipped" class="btn btn-sm" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);border-radius:8px;font-size:0.75rem">Shipped</a>
-                  <a href="/admin/order/{{o.id}}/Delivered" class="btn btn-sm" style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:8px;font-size:0.75rem">Delivered</a>
-                </div>
-              </td>
-            </tr>
+        <div id="ordersBody">
+        {% for o in orders %}
+        <div class="card-dark p-4 mb-3 order-card">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+              <span style="color:#8b5cf6;font-weight:800;font-size:1.1rem">#{{o.id}}</span>
+              <span style="color:#555;font-size:0.8rem;margin-left:10px">{{o.created_at}}</span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+              <span style="background:{% if o.status=='Pending' %}rgba(245,158,11,0.15){% elif o.status=='Shipped' %}rgba(139,92,246,0.15){% else %}rgba(56,239,125,0.15){% endif %};color:{% if o.status=='Pending' %}#f59e0b{% elif o.status=='Shipped' %}#a78bfa{% else %}#38ef7d{% endif %};border:1px solid {% if o.status=='Pending' %}rgba(245,158,11,0.3){% elif o.status=='Shipped' %}rgba(139,92,246,0.3){% else %}rgba(56,239,125,0.3){% endif %};border-radius:20px;padding:3px 12px;font-size:0.8rem">{{o.status}}</span>
+              {% if o.payment == 'gcash' %}
+              <span style="background:rgba(0,123,255,0.15);color:#60a5fa;border:1px solid rgba(0,123,255,0.3);border-radius:20px;padding:3px 10px;font-size:0.8rem"><i class="fas fa-mobile-alt"></i> GCash</span>
+              {% else %}
+              <span style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:20px;padding:3px 10px;font-size:0.8rem"><i class="fas fa-money-bill-wave"></i> COD</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <small style="color:#555;display:block">Customer</small>
+              <span style="color:#fff;font-weight:600">{{o.name}}</span>
+            </div>
+            <div class="col-md-4">
+              <small style="color:#555;display:block">Phone</small>
+              <span style="color:#ccc">{{o.phone}}</span>
+            </div>
+            <div class="col-md-4">
+              <small style="color:#555;display:block">Total</small>
+              <span style="color:#8b5cf6;font-weight:700">₱{{o.total}}</span>
+            </div>
+            <div class="col-12">
+              <small style="color:#555;display:block">Address</small>
+              <span style="color:#ccc;font-size:0.9rem">{{o.address}}</span>
+            </div>
+          </div>
+          <div class="mb-3">
+            <small style="color:#555;display:block;margin-bottom:6px">Products Ordered</small>
+            {% for item in o.order_items %}
+            <span style="background:rgba(139,92,246,0.1);color:#a78bfa;border:1px solid rgba(139,92,246,0.2);border-radius:20px;padding:2px 10px;font-size:0.82rem;margin-right:6px;margin-bottom:4px;display:inline-block">{{item.product_name}} x{{item.qty}}</span>
             {% endfor %}
-            </tbody>
-          </table>
+          </div>
+          {% if o.payment == 'gcash' and o.gcash_ref %}
+          <div class="mb-3">
+            <small style="color:#555;display:block;margin-bottom:6px">GCash Receipt</small>
+            <a href="{{o.gcash_ref}}" target="_blank">
+              <img src="{{o.gcash_ref}}" style="height:80px;width:auto;border-radius:8px;border:1px solid rgba(0,123,255,0.3);object-fit:cover">
+            </a>
+          </div>
+          {% endif %}
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="/admin/order/{{o.id}}/Pending" class="btn btn-sm" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:0.8rem">Pending</a>
+            <a href="/admin/order/{{o.id}}/Shipped" class="btn btn-sm" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);border-radius:8px;font-size:0.8rem">Shipped</a>
+            <a href="/admin/order/{{o.id}}/Delivered" class="btn btn-sm" style="background:rgba(56,239,125,0.15);color:#38ef7d;border:1px solid rgba(56,239,125,0.3);border-radius:8px;font-size:0.8rem">Delivered</a>
+          </div>
+        </div>
+        {% endfor %}
         </div>
         {% else %}
         <div class="text-center py-5"><i class="fas fa-inbox fa-3x mb-3" style="color:#555"></i><p style="color:#888">No orders yet.</p></div>
@@ -245,6 +262,13 @@ new Chart(document.getElementById('statusDoughnut'), {
   },
   options: { plugins: { legend: { display: false } }, cutout: '70%' }
 });
+
+function filterOrders() {
+  const q = document.getElementById('orderSearch').value.toLowerCase();
+  document.querySelectorAll('.order-card').forEach(card => {
+    card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
 
 function filterTable(inputId, tbodyId) {
   const q = document.getElementById(inputId).value.toLowerCase();
