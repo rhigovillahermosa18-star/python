@@ -651,9 +651,12 @@ def update_order(oid, status):
         return redirect(url_for("admin"))
     supabase.table("orders").update({"status": status}).eq("id", oid).execute()
     if status in ("Shipped", "Delivered"):
-        order = supabase.table("orders").select("*").eq("id", oid).single().execute().data
-        if order:
-            send_order_email(order, status)
+        try:
+            order = supabase.table("orders").select("*").eq("id", oid).single().execute().data
+            if order:
+                send_order_email(order, status)
+        except Exception as e:
+            app.logger.error("update_order email error: %s", e)
     flash(f"Order #{oid} marked as {status}.", "success")
     return redirect(url_for("admin"))
 
