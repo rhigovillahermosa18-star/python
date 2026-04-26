@@ -269,7 +269,7 @@ def register():
             flash("Username or email already taken.", "danger")
         else:
             code = str(random.randint(100000, 999999))
-            session["pending_user"] = {"username": username, "email": email, "password": password, "phone": request.form.get("phone", "").strip()}
+            session["pending_user"] = {"username": username, "email": email, "password": password, "phone": request.form.get("phone", "").strip(), "address": request.form.get("address", "").strip()}
             session["verify_code"] = code
             try:
                 msg = Message("Your Verification Code - CloudVape", recipients=[email])
@@ -319,6 +319,7 @@ def verify_email():
                 "email": u["email"],
                 "password": u["password"],
                 "phone": u.get("phone", ""),
+                "address": u.get("address", ""),
                 "role": "customer"
             }).execute()
             flash("Email verified! You can now login.", "success")
