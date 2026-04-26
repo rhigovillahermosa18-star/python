@@ -542,7 +542,12 @@ def admin():
     if not is_admin():
         return redirect(url_for("home"))
     products = supabase.table("products").select("*").execute().data or []
-    orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
+    orders_raw = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
+    orders = []
+    for o in orders_raw:
+        raw_items = supabase.table("order_items").select("product_name,qty").eq("order_id", o["id"]).execute().data or []
+        o["order_items"] = raw_items
+        orders.append(o)
     users = supabase.table("users").select("*").execute().data or []
 
     # Sales by date

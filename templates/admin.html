@@ -96,13 +96,18 @@
         <div class="table-responsive table-dark-custom">
           <table class="table table-borderless mb-0">
             <thead>
-              <tr><th>#</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>#</th><th>Customer</th><th>Products</th><th>Phone</th><th>Total</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody id="ordersBody">
             {% for o in orders %}
             <tr>
               <td><strong style="color:#8b5cf6;">#{{o.id}}</strong></td>
               <td><span style="color:#fff;">{{o.name}}</span></td>
+              <td>
+                {% for item in o.order_items %}
+                <div style="color:#ccc;font-size:0.85rem">{{item.product_name}} <span style="color:#888">x{{item.qty}}</span></div>
+                {% endfor %}
+              </td>
               <td><span style="color:#ccc;">{{o.phone}}</span></td>
               <td><strong style="color:#8b5cf6;">₱{{o.total}}</strong></td>
               <td>
