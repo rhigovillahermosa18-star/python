@@ -1,11 +1,13 @@
 import os
 import math
 import uuid
+import random
 import logging
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename, safe_join
 from werkzeug.exceptions import NotFound
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
+from flask_mail import Mail, Message
 from supabase import create_client, Client
 import cloudinary
 import cloudinary.uploader
@@ -22,6 +24,14 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "static"),
 )
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
+
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 587
+app.config["MAIL_USE_TLS"] = True
+app.config["MAIL_USERNAME"] = os.environ.get("MAIL_EMAIL")
+app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
+app.config["MAIL_DEFAULT_SENDER"] = ("CloudVape", os.environ.get("MAIL_EMAIL", ""))
+mail = Mail(app)
 
 supabase: Client = create_client(
     os.environ.get("SUPABASE_URL"),
@@ -198,15 +208,63 @@ def register():
         if existing:
             flash("Username or email already taken.", "danger")
         else:
+            code = str(random.randint(100000, 999999))
+            session["pending_user"] = {"username": username, "email": email, "password": password}
+            session["verify_code"] = code
+            try:
+                msg = Message("Your Verification Code - CloudVape", recipients=[email])
+                msg.html = f"""
+                <div style="font-family:Segoe UI,sans-serif;max-width:500px;margin:auto;background:#0f0f1a;color:#e0e0e0;border-radius:16px;overflow:hidden">
+                  <div style="background:linear-gradient(135deg,#8b5cf6,#ec4899);padding:30px;text-align:center">
+                    <h1 style="color:#fff;margin:0;font-size:1.8rem">&#9729; CloudVape</h1>
+                  </div>
+                  <div style="padding:40px">
+                    <p style="font-size:1rem">Hi <strong>{username}</strong>,</p>
+                    <p style="color:#aaa">Thank you for registering at <strong>CloudVape</strong>! Use the code below to verify your email:</p>
+                    <div style="background:rgba(139,92,246,0.15);border:2px solid #8b5cf6;border-radius:12px;padding:24px;text-align:center;margin:24px 0">
+                      <p style="color:#aaa;margin:0 0 8px;font-size:0.85rem">YOUR VERIFICATION CODE</p>
+                      <h2 style="color:#8b5cf6;font-size:2.5rem;letter-spacing:8px;margin:0">{code}</h2>
+                    </div>
+                    <p style="color:#aaa;font-size:0.9rem">&#8987; This code expires in <strong style="color:#fff">10 minutes</strong>.</p>
+                    <hr style="border-color:rgba(139,92,246,0.2);margin:24px 0">
+                    <p style="color:#666;font-size:0.85rem">&#128274; <strong>Never share this code</strong> with anyone. CloudVape will never ask for your verification code.</p>
+                    <p style="color:#666;font-size:0.85rem">If you did not register, please ignore this email.</p>
+                    <hr style="border-color:rgba(139,92,246,0.2);margin:24px 0">
+                    <p style="color:#666;font-size:0.8rem">Need help? Contact us at <a href="mailto:support@cloudvape.ph" style="color:#8b5cf6">support@cloudvape.ph</a></p>
+                    <p style="color:#555;font-size:0.75rem;text-align:center;margin-top:16px">&copy; 2024 CloudVape. All rights reserved.</p>
+                  </div>
+                </div>
+                """
+                mail.send(msg)
+                flash("Verification code sent to your email!", "success")
+                return redirect(url_for("verify_email"))
+            except Exception as e:
+                app.logger.error("Mail error: %s", e)
+                flash("Failed to send verification email. Please try again.", "danger")
+    return render_template("register.html", user=None, cart_count=0)
+
+
+# --- VERIFY EMAIL ---
+@app.route("/verify-email", methods=["GET", "POST"])
+def verify_email():
+    if "pending_user" not in session:
+        return redirect(url_for("register"))
+    if request.method == "POST":
+        entered = request.form.get("code", "").strip()
+        if entered == session.get("verify_code"):
+            u = session.pop("pending_user")
+            session.pop("verify_code", None)
             supabase.table("users").insert({
-                "username": username,
-                "email": email,
-                "password": password,
+                "username": u["username"],
+                "email": u["email"],
+                "password": u["password"],
                 "role": "customer"
             }).execute()
-            flash("Account created! Please login.", "success")
+            flash("Email verified! You can now login.", "success")
             return redirect(url_for("login"))
-    return render_template("register.html", user=None, cart_count=0)
+        else:
+            flash("Invalid verification code. Please try again.", "danger")
+    return render_template("verify_email.html", user=None, cart_count=0)
 
 
 # --- LOGIN ---
