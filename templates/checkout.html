@@ -20,9 +20,31 @@
           <label style="color:#aaa;font-size:0.9rem">Delivery Address</label>
           <textarea name="address" class="form-control" rows="3" placeholder="Street, Barangay, City, Province" required>{{user.address or ''}}</textarea>
         </div>
-        <div class="card-dark p-3 mb-4" style="border-color:rgba(236,72,153,0.3)">
-          <p style="color:#aaa;font-size:0.85rem;margin:0"><i class="fas fa-info-circle" style="color:#ec4899"></i> Payment method: <strong style="color:#fff">Cash on Delivery</strong></p>
+
+        <!-- PAYMENT METHOD -->
+        <div class="mb-4">
+          <label style="color:#aaa;font-size:0.9rem">Payment Method</label>
+          <div class="d-flex gap-3 mt-2">
+            <div onclick="selectPayment('cod')" id="cod-box" style="flex:1;cursor:pointer;border:2px solid #8b5cf6;border-radius:12px;padding:14px;text-align:center;background:rgba(139,92,246,0.15);transition:all 0.2s">
+              <i class="fas fa-money-bill-wave fa-lg mb-1" style="color:#38ef7d"></i>
+              <div style="color:#fff;font-weight:600;font-size:0.9rem">Cash on Delivery</div>
+            </div>
+            <div onclick="selectPayment('gcash')" id="gcash-box" style="flex:1;cursor:pointer;border:2px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;text-align:center;background:rgba(255,255,255,0.03);transition:all 0.2s">
+              <i class="fas fa-mobile-alt fa-lg mb-1" style="color:#007bff"></i>
+              <div style="color:#fff;font-weight:600;font-size:0.9rem">GCash</div>
+            </div>
+          </div>
+          <input type="hidden" name="payment" id="payment-input" value="cod">
         </div>
+
+        <!-- GCASH QR -->
+        <div id="gcash-qr" style="display:none" class="card-dark p-4 mb-4 text-center">
+          <p style="color:#aaa;font-size:0.9rem;margin-bottom:12px"><i class="fas fa-mobile-alt" style="color:#007bff"></i> Scan the QR code to pay via <strong style="color:#fff">GCash</strong></p>
+          <img src="/static/images/qrcode.jpg" style="width:220px;height:220px;object-fit:contain;border-radius:12px;border:2px solid rgba(0,123,255,0.3)" alt="GCash QR Code">
+          <p style="color:#aaa;font-size:0.85rem;margin-top:12px">After payment, enter your <strong style="color:#fff">GCash reference number</strong> below:</p>
+          <input type="text" name="gcash_ref" class="form-control mt-2 text-center" placeholder="e.g. 1234567890">
+        </div>
+
         <button class="btn btn-purple w-100 btn-lg"><i class="fas fa-check-circle"></i> Place Order</button>
       </form>
     </div>
@@ -54,5 +76,24 @@
     </div>
   </div>
 </div>
+
+<script>
+function selectPayment(method) {
+  document.getElementById('payment-input').value = method;
+  if (method === 'gcash') {
+    document.getElementById('gcash-box').style.border = '2px solid #007bff';
+    document.getElementById('gcash-box').style.background = 'rgba(0,123,255,0.1)';
+    document.getElementById('cod-box').style.border = '2px solid rgba(255,255,255,0.1)';
+    document.getElementById('cod-box').style.background = 'rgba(255,255,255,0.03)';
+    document.getElementById('gcash-qr').style.display = 'block';
+  } else {
+    document.getElementById('cod-box').style.border = '2px solid #8b5cf6';
+    document.getElementById('cod-box').style.background = 'rgba(139,92,246,0.15)';
+    document.getElementById('gcash-box').style.border = '2px solid rgba(255,255,255,0.1)';
+    document.getElementById('gcash-box').style.background = 'rgba(255,255,255,0.03)';
+    document.getElementById('gcash-qr').style.display = 'none';
+  }
+}
+</script>
 
 {% endblock %}

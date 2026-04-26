@@ -450,7 +450,9 @@ def checkout():
                 "address": request.form["address"],
                 "phone": request.form["phone"],
                 "total": float(total),
-                "status": "Pending"
+                "status": "Pending",
+                "payment": request.form.get("payment", "cod"),
+                "gcash_ref": request.form.get("gcash_ref", "")
             }
             if "username" in u:
                 order_payload["username"] = u["username"]
