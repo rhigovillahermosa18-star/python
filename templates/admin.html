@@ -130,9 +130,19 @@
           </div>
           <div class="mb-3">
             <small style="color:#555;display:block;margin-bottom:6px">Products Ordered</small>
+            <div class="d-flex flex-wrap gap-2">
             {% for item in o.order_items %}
-            <span style="background:rgba(139,92,246,0.1);color:#a78bfa;border:1px solid rgba(139,92,246,0.2);border-radius:20px;padding:2px 10px;font-size:0.82rem;margin-right:6px;margin-bottom:4px;display:inline-block">{{item.product_name}} x{{item.qty}}</span>
+            <div class="d-flex align-items-center gap-2" style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:10px;padding:6px 10px">
+              {% if item.image %}
+              <img src="{{item.image}}" style="width:36px;height:36px;object-fit:cover;border-radius:6px">
+              {% endif %}
+              <div>
+                <div style="color:#fff;font-size:0.85rem;font-weight:600">{{item.product_name}}</div>
+                <div style="color:#888;font-size:0.78rem">x{{item.qty}}</div>
+              </div>
+            </div>
             {% endfor %}
+            </div>
           </div>
           {% if o.payment == 'gcash' and o.gcash_ref %}
           <div class="mb-3">
