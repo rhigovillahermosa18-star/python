@@ -417,6 +417,31 @@ def login():
     return render_template("login.html", user=None, cart_count=0)
 
 
+# --- VERIFY NEW EMAIL (settings) ---
+@app.route("/settings/verify-email", methods=["GET", "POST"])
+def verify_new_email():
+    if not current_user() or "new_email" not in session:
+        return redirect(url_for("settings"))
+    if request.method == "POST":
+        entered = request.form.get("code", "").strip()
+        if entered == session.get("email_verify_code"):
+            u = current_user()
+            profile = session.pop("pending_profile", {})
+            new_email = session.pop("new_email")
+            session.pop("email_verify_code", None)
+            supabase.table("users").update({
+                "email": new_email,
+                "fullname": profile.get("fullname", ""),
+                "phone": profile.get("phone", ""),
+                "address": profile.get("address", "")
+            }).eq("id", u["id"]).execute()
+            flash("Email and profile updated successfully!", "success")
+            return redirect(url_for("settings"))
+        else:
+            flash("Invalid verification code. Please try again.", "danger")
+    return render_template("verify_new_email.html", user=current_user(), cart_count=cart_count())
+
+
 # --- SETTINGS ---
 @app.route("/settings")
 def settings():
@@ -432,13 +457,62 @@ def settings_profile():
     if not current_user():
         return redirect(url_for("login"))
     u = current_user()
-    supabase.table("users").update({
-        "fullname": request.form["fullname"].strip(),
-        "email": request.form["email"].strip(),
-        "phone": request.form["phone"].strip(),
-        "address": request.form["address"].strip()
-    }).eq("id", u["id"]).execute()
-    flash("Profile updated successfully!", "success")
+    new_email = request.form["email"].strip()
+    
+    # Check if email changed
+    if new_email != u["email"]:
+        # Check if email already taken
+        existing = supabase.table("users").select("id").eq("email", new_email).execute().data
+        if existing:
+            flash("Email already taken by another user.", "danger")
+            return redirect(url_for("settings"))
+        
+        # Send verification code
+        code = str(random.randint(100000, 999999))
+        session["email_verify_code"] = code
+        session["new_email"] = new_email
+        session["pending_profile"] = {
+            "fullname": request.form["fullname"].strip(),
+            "phone": request.form["phone"].strip(),
+            "address": request.form["address"].strip()
+        }
+        try:
+            msg = Message("Verify Your New Email - CloudVape", recipients=[new_email])
+            msg.html = f"""
+            <div style="font-family:Segoe UI,sans-serif;max-width:500px;margin:auto;background:#0f0f1a;color:#e0e0e0;border-radius:16px;overflow:hidden">
+              <div style="background:linear-gradient(135deg,#8b5cf6,#ec4899);padding:30px;text-align:center">
+                <h1 style="color:#fff;margin:0;font-size:1.8rem">&#9729; CloudVape</h1>
+              </div>
+              <div style="padding:40px">
+                <p>Hi <strong>{u['username']}</strong>,</p>
+                <p style="color:#aaa">You requested to change your email. Verify your new email with the code below:</p>
+                <div style="background:rgba(139,92,246,0.15);border:2px solid #8b5cf6;border-radius:12px;padding:24px;text-align:center;margin:24px 0">
+                  <p style="color:#aaa;margin:0 0 8px;font-size:0.85rem">EMAIL VERIFICATION CODE</p>
+                  <h2 style="color:#8b5cf6;font-size:2.5rem;letter-spacing:8px;margin:0">{code}</h2>
+                </div>
+                <p style="color:#aaa;font-size:0.9rem">&#8987; This code expires in <strong style="color:#fff">10 minutes</strong>.</p>
+                <hr style="border-color:rgba(139,92,246,0.2);margin:24px 0">
+                <p style="color:#666;font-size:0.85rem">&#128274; If you did not request this change, please ignore this email.</p>
+                <p style="color:#666;font-size:0.8rem">Need help? Contact us at <a href="mailto:support@cloudvape.ph" style="color:#8b5cf6">support@cloudvape.ph</a></p>
+                <p style="color:#555;font-size:0.75rem;text-align:center;margin-top:16px">&copy; 2024 CloudVape. All rights reserved.</p>
+              </div>
+            </div>
+            """
+            mail.send(msg)
+            flash("Verification code sent to your new email!", "success")
+            return redirect(url_for("verify_new_email"))
+        except Exception as e:
+            app.logger.error("Email change verification error: %s", e)
+            flash("Failed to send verification email. Please try again.", "danger")
+            return redirect(url_for("settings"))
+    else:
+        # Email not changed, just update other fields
+        supabase.table("users").update({
+            "fullname": request.form["fullname"].strip(),
+            "phone": request.form["phone"].strip(),
+            "address": request.form["address"].strip()
+        }).eq("id", u["id"]).execute()
+        flash("Profile updated successfully!", "success")
     return redirect(url_for("settings"))
 
 
