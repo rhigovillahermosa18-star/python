@@ -329,6 +329,73 @@ def verify_email():
     return render_template("verify_email.html", user=None, cart_count=0)
 
 
+# --- FORGOT PASSWORD ---
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form["email"].strip()
+        user = supabase.table("users").select("id,username,email").eq("email", email).execute().data
+        if user:
+            code = str(random.randint(100000, 999999))
+            session["reset_code"] = code
+            session["reset_email"] = email
+            try:
+                msg = Message("Password Reset Code - CloudVape", recipients=[email])
+                msg.html = f"""
+                <div style="font-family:Segoe UI,sans-serif;max-width:500px;margin:auto;background:#0f0f1a;color:#e0e0e0;border-radius:16px;overflow:hidden">
+                  <div style="background:linear-gradient(135deg,#8b5cf6,#ec4899);padding:30px;text-align:center">
+                    <h1 style="color:#fff;margin:0;font-size:1.8rem">&#9729; CloudVape</h1>
+                  </div>
+                  <div style="padding:40px">
+                    <p>Hi <strong>{user[0]['username']}</strong>,</p>
+                    <p style="color:#aaa">We received a request to reset your password. Use the code below:</p>
+                    <div style="background:rgba(139,92,246,0.15);border:2px solid #8b5cf6;border-radius:12px;padding:24px;text-align:center;margin:24px 0">
+                      <p style="color:#aaa;margin:0 0 8px;font-size:0.85rem">PASSWORD RESET CODE</p>
+                      <h2 style="color:#8b5cf6;font-size:2.5rem;letter-spacing:8px;margin:0">{code}</h2>
+                    </div>
+                    <p style="color:#aaa;font-size:0.9rem">&#8987; This code expires in <strong style="color:#fff">10 minutes</strong>.</p>
+                    <hr style="border-color:rgba(139,92,246,0.2);margin:24px 0">
+                    <p style="color:#666;font-size:0.85rem">&#128274; If you did not request a password reset, please ignore this email.</p>
+                    <p style="color:#666;font-size:0.8rem">Need help? Contact us at <a href="mailto:support@cloudvape.ph" style="color:#8b5cf6">support@cloudvape.ph</a></p>
+                    <p style="color:#555;font-size:0.75rem;text-align:center;margin-top:16px">&copy; 2024 CloudVape. All rights reserved.</p>
+                  </div>
+                </div>
+                """
+                mail.send(msg)
+                flash("Reset code sent to your email!", "success")
+                return redirect(url_for("reset_password"))
+            except Exception as e:
+                app.logger.error("Forgot password mail error: %s", e)
+                flash("Failed to send reset email. Please try again.", "danger")
+        else:
+            flash("No account found with that email.", "danger")
+    return render_template("forgot_password.html", user=None, cart_count=0)
+
+
+# --- RESET PASSWORD ---
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    if "reset_email" not in session:
+        return redirect(url_for("forgot_password"))
+    if request.method == "POST":
+        code = request.form.get("code", "").strip()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm", "")
+        if code != session.get("reset_code"):
+            flash("Invalid reset code. Please try again.", "danger")
+        elif password != confirm:
+            flash("Passwords do not match.", "danger")
+        elif len(password) < 6:
+            flash("Password must be at least 6 characters.", "danger")
+        else:
+            email = session.pop("reset_email")
+            session.pop("reset_code", None)
+            supabase.table("users").update({"password": password}).eq("email", email).execute()
+            flash("Password reset successfully! Please login.", "success")
+            return redirect(url_for("login"))
+    return render_template("reset_password.html", user=None, cart_count=0)
+
+
 # --- LOGIN ---
 @app.route("/login", methods=["GET", "POST"])
 def login():
