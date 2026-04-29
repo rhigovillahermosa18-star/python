@@ -417,6 +417,51 @@ def login():
     return render_template("login.html", user=None, cart_count=0)
 
 
+# --- SETTINGS ---
+@app.route("/settings")
+def settings():
+    if not current_user():
+        return redirect(url_for("login"))
+    if is_admin():
+        return redirect(url_for("admin"))
+    return render_template("settings.html", user=current_user(), cart_count=cart_count())
+
+
+@app.route("/settings/profile", methods=["POST"])
+def settings_profile():
+    if not current_user():
+        return redirect(url_for("login"))
+    u = current_user()
+    supabase.table("users").update({
+        "fullname": request.form["fullname"].strip(),
+        "email": request.form["email"].strip(),
+        "phone": request.form["phone"].strip(),
+        "address": request.form["address"].strip()
+    }).eq("id", u["id"]).execute()
+    flash("Profile updated successfully!", "success")
+    return redirect(url_for("settings"))
+
+
+@app.route("/settings/password", methods=["POST"])
+def settings_password():
+    if not current_user():
+        return redirect(url_for("login"))
+    u = current_user()
+    current_pw = request.form["current_password"]
+    new_pw = request.form["new_password"]
+    confirm_pw = request.form["confirm_password"]
+    if current_pw != u["password"]:
+        flash("Current password is incorrect.", "danger")
+    elif new_pw != confirm_pw:
+        flash("New passwords do not match.", "danger")
+    elif len(new_pw) < 6:
+        flash("Password must be at least 6 characters.", "danger")
+    else:
+        supabase.table("users").update({"password": new_pw}).eq("id", u["id"]).execute()
+        flash("Password changed successfully!", "success")
+    return redirect(url_for("settings"))
+
+
 # --- LOGOUT ---
 @app.route("/logout")
 def logout():

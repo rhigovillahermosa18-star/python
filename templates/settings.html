@@ -1,0 +1,84 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2 class="section-title mb-4"><i class="fas fa-cog"></i> Account Settings</h2>
+
+<div class="row g-4">
+  <!-- PROFILE SETTINGS -->
+  <div class="col-lg-6">
+    <div class="card-dark p-4">
+      <h5 style="color:#fff;font-weight:700;margin-bottom:20px"><i class="fas fa-user-circle"></i> Profile Information</h5>
+      <form method="POST" action="/settings/profile">
+        <div class="mb-3">
+          <label style="color:#aaa;font-size:0.9rem">Full Name</label>
+          <input type="text" name="fullname" class="form-control" value="{{user.fullname or ''}}" placeholder="Enter your full name" required>
+        </div>
+        <div class="mb-3">
+          <label style="color:#aaa;font-size:0.9rem">Username</label>
+          <input type="text" class="form-control" value="{{user.username}}" disabled style="background:rgba(255,255,255,0.03);color:#666">
+          <small style="color:#666;font-size:0.8rem">Username cannot be changed</small>
+        </div>
+        <div class="mb-3">
+          <label style="color:#aaa;font-size:0.9rem">Email</label>
+          <input type="email" name="email" class="form-control" value="{{user.email}}" placeholder="Enter your email" required>
+        </div>
+        <div class="mb-3">
+          <label style="color:#aaa;font-size:0.9rem">Phone Number</label>
+          <input type="text" name="phone" class="form-control" value="{{user.phone or ''}}" placeholder="e.g. 09XX-XXX-XXXX" required>
+        </div>
+        <div class="mb-4">
+          <label style="color:#aaa;font-size:0.9rem">Delivery Address</label>
+          <textarea name="address" class="form-control" rows="3" placeholder="Street, Barangay, City, Province" required>{{user.address or ''}}</textarea>
+        </div>
+        <button class="btn btn-purple w-100"><i class="fas fa-save"></i> Update Profile</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PASSWORD SETTINGS -->
+  <div class="col-lg-6">
+    <div class="card-dark p-4">
+      <h5 style="color:#fff;font-weight:700;margin-bottom:20px"><i class="fas fa-lock"></i> Change Password</h5>
+      <form method="POST" action="/settings/password">
+        <div class="mb-3">
+          <label style="color:#aaa;font-size:0.9rem">Current Password</label>
+          <div class="input-group">
+            <input type="password" name="current_password" id="currPass" class="form-control" placeholder="Enter current password" required>
+            <span class="input-group-text" onclick="togglePass('currPass','currEye')" style="cursor:pointer;background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.3);color:#8b5cf6"><i class="fas fa-eye" id="currEye"></i></span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label style="color:#aaa;font-size:0.9rem">New Password</label>
+          <div class="input-group">
+            <input type="password" name="new_password" id="newPass" class="form-control" placeholder="Enter new password" required>
+            <span class="input-group-text" onclick="togglePass('newPass','newEye')" style="cursor:pointer;background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.3);color:#8b5cf6"><i class="fas fa-eye" id="newEye"></i></span>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label style="color:#aaa;font-size:0.9rem">Confirm New Password</label>
+          <div class="input-group">
+            <input type="password" name="confirm_password" id="confPass" class="form-control" placeholder="Confirm new password" required>
+            <span class="input-group-text" onclick="togglePass('confPass','confEye')" style="cursor:pointer;background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.3);color:#8b5cf6"><i class="fas fa-eye" id="confEye"></i></span>
+          </div>
+        </div>
+        <button class="btn btn-purple w-100"><i class="fas fa-key"></i> Change Password</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePass(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.replace('fa-eye', 'fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.replace('fa-eye-slash', 'fa-eye');
+  }
+}
+</script>
+
+{% endblock %}
